@@ -27,14 +27,31 @@ def parse_www_authenticate(www_authenticate):
         parsed[k] = v.strip('"')
     return parsed
 
-
-
-def get_image_manifest(registry, image, tag):
+def get_image_manifest(image_spec):
     """
     Fetch image manifest from a docker v2 registry.
 
+    image_spec is expected to be:
+
+        <registry>/<image-name>:<image-tag>
+
     No authentication supported yet.
     """
+
+    image_path, tag = image_spec.split(':')
+    if image_path.count('/') == 2:
+        # Assume this is a 'full image', like gcr.io/project/image
+        bare_registry, image = image_path.split('/', 1)
+        registry = f'https://{bare_registry}'
+    elif image_path.count('/') == 1:
+        # Assume this points to a full image name in dockerhub
+        registry = 'https://registry-1.docker.io'
+        image = image_path
+    else:
+        # wat?
+        raise ValueError(f'{image_spec} is not a valid docker image spec')
+
+
     manifest_url = '{}/v2/{}/manifests/{}'.format(registry, image, tag)
     resp = requests.get(manifest_url)
 
@@ -56,9 +73,11 @@ def get_image_manifest(registry, image, tag):
         )
 
         if resp.status_code == 404:
-            # 404 means it doesn't exist
+            # Image does not exist
             return None
         return resp.json()
+    elif resp.status_code == 404:
+        return None
     elif resp.status_code == 200:
         return resp.json()
     else:

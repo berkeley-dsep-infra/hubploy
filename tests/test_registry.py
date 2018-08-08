@@ -13,12 +13,18 @@ def test_existing_image():
     """
     Test that a known good image exists
     """
-    manifest = get_image_manifest('https://registry-1.docker.io', 'library/ubuntu', '18.04')
+    manifest = get_image_manifest('library/ubuntu:18.04')
+    assert manifest is not None
+
+    manifest = get_image_manifest('gcr.io/google-containers/busybox:1.27')
     assert manifest is not None
 
 def test_missing_image():
     """
     Test that a known-missing image does *not* exist
     """
-    manifest = get_image_manifest('https://registry-1.docker.io', 'library/ubuntu', 'doesnotexist')
+    manifest = get_image_manifest('library/ubuntu:watwatwat')
+    assert manifest is None
+
+    manifest = get_image_manifest('gcr.io/google-containers/busybox:watwatwat')
     assert manifest is None
