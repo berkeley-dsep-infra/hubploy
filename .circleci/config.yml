@@ -33,4 +33,8 @@ jobs:
           name: run tests
           command: |
             source venv/bin/activate
-            py.test tests/
+            mkdir -p test-reports/unit
+            py.test --junitxml=test-reports/unit/results.xml tests/
+
+      - store_test_results:
+          path: test-reports
