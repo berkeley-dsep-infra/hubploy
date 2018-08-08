@@ -7,4 +7,7 @@ setuptools.setup(
     url="https://github.com/yuvipanda/hubploy",
     author="Yuvi Panda",
     packages=setuptools.find_packages(),
+    install_requires=[
+        'requests'
+    ]
 )
