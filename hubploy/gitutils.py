@@ -7,6 +7,7 @@ import os
 
 def last_git_modified(path, n=1):
     """Get last revision at which `path` got modified"""
+    path = os.path.abspath(path)
     if os.path.isdir(path):
         cwd = path
     else:
