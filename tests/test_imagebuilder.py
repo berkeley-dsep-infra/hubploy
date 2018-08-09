@@ -88,7 +88,7 @@ def test_imagebuild(git_repo, local_registry):
     assert imagebuilder.needs_building(image_dir, image_name)
 
     # Build the image
-    imagebuilder.ensure_image(image_dir, image_name)
+    imagebuilder.build_image(image_dir, image_name)
 
     # Validate that the image we expect to be built / tagged is
     expected_image_tag_1 = gitutils.last_git_modified(image_dir)
@@ -111,7 +111,7 @@ def test_imagebuild(git_repo, local_registry):
     assert imagebuilder.needs_building(image_dir, image_name)
 
     # Build the image
-    imagebuilder.ensure_image(image_dir, image_name)
+    imagebuilder.build_image(image_dir, image_name)
 
     # Validate that the image we expect to be built / tagged is
     expected_image_tag_2 = gitutils.last_git_modified(image_dir)

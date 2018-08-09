@@ -9,5 +9,11 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'requests'
-    ]
+    ],
+    entry_points={
+        'console_scripts': [
+            'hubploy-image-builder = hubploy.imagebuilder:main',
+        ],
+    },
+
 )
