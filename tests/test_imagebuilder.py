@@ -1,3 +1,4 @@
+import socket
 import tempfile
 import pathlib
 import os
@@ -5,6 +6,7 @@ import secrets
 import pytest
 import subprocess
 import docker
+import time
 
 
 from hubploy import imagebuilder, gitutils
@@ -19,44 +21,107 @@ def git_repo():
         subprocess.check_output(['git', 'init'], cwd=d)
         yield pathlib.Path(d)
 
+@pytest.fixture
+def open_port():
+    """
+    Fixture providing an open port on the host system
+    """
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        s.bind(("",0))
+        return s.getsockname()[1]
+    finally:
+        s.close()
 
-def test_imagebuild(git_repo):
+@pytest.fixture
+def local_registry(open_port):
+    """
+    Fixture to create a local docker registry
+    """
+    client = docker.from_env()
+    container = client.containers.run(
+        'registry:2',
+        detach=True,
+        ports={'5000/tcp': open_port}
+    )
+    time.sleep(2)
+    try:
+        yield f'localhost:{open_port}'
+    finally:
+        container.stop()
+        container.remove()
+
+def commit_nonce(git_repo):
+    """
+    Commit a nonce file in given git repo
+
+    Return nonce value used
+    """
+    nonce = secrets.token_hex(32)
+    with open(os.path.join(git_repo, 'image/nonce'), 'w') as f:
+        f.write(nonce)
+
+    subprocess.check_output(['git', 'add', '.'], cwd=git_repo)
+    subprocess.check_output(['git', 'commit', '-m', 'test-commit'], cwd=git_repo)
+
+    return nonce
+
+def test_imagebuild(git_repo, local_registry):
+    """
+    End to end test of image building.
+    """
+    client = docker.from_env()
+    image_name = f'{local_registry}/hubdeploy-test/' + secrets.token_hex(8)
+    image_dir = os.path.join(git_repo, 'image')
+
+    # Set up image directory & Dockerfile
     os.makedirs(git_repo / 'image')
     with open(git_repo / 'image/Dockerfile', 'w') as f:
         f.write('FROM busybox\n')
         f.write('ADD nonce /')
 
-    nonce = secrets.token_hex(32)
-    with open(git_repo / 'image/nonce', 'w') as f:
-        f.write(nonce)
-    
-    subprocess.check_output(['git', 'add', '.'], cwd=git_repo)
-    subprocess.check_output(['git', 'commit', '-m', 'test-commit'], cwd=git_repo)
+    # Round 1
+    # Make a commit with a random nonce in git repository
+    nonce_1 = commit_nonce(git_repo)
 
-    image_name = 'hubdeploy-test/' + secrets.token_hex(8)
-    imagebuilder.ensure_image(str(git_repo / 'image'), image_name)
+    # We haven't build this image so far, so it must need building
+    assert imagebuilder.needs_building(image_dir, image_name)
 
-    expected_image_tag = gitutils.last_git_modified(str(git_repo / 'image'))
-    expected_image_spec = f'{image_name}:{expected_image_tag}'
+    # Build the image
+    imagebuilder.ensure_image(image_dir, image_name)
 
-    client = docker.from_env()
+    # Validate that the image we expect to be built / tagged is
+    expected_image_tag_1 = gitutils.last_git_modified(image_dir)
+    expected_image_spec_1 = f'{image_name}:{expected_image_tag_1}'
+    assert client.images.get(expected_image_spec_1) is not None
 
-    assert client.images.get(expected_image_spec) is not None
+    # Validate that the image being built is actually what we wanted
+    assert client.containers.run(expected_image_spec_1, 'cat /nonce').decode() == nonce_1
 
-    assert client.containers.run(expected_image_spec, 'cat /nonce').decode() == nonce
+    # Push the image, and verify that we now know we don't need to build it
+    assert imagebuilder.needs_building(image_dir, image_name)
+    client.images.push(expected_image_spec_1)
+    assert not imagebuilder.needs_building(image_dir, image_name)
 
-    nonce_2 = secrets.token_hex(32)
-    with open(git_repo / 'image/nonce', 'w') as f:
-        f.write(nonce_2)
-    
-    subprocess.check_output(['git', 'add', '.'], cwd=git_repo)
-    subprocess.check_output(['git', 'commit', '-m', 'test-commit-2'], cwd=git_repo)
+    # Round 2! We do this to make sure we handle rebuilding properly
+    # Make a commit with a new random nonce in git repository
+    nonce_2 = commit_nonce(git_repo)
 
-    imagebuilder.ensure_image(str(git_repo / 'image'), image_name)
+    # We haven't built the image since this commit, so it must need building
+    assert imagebuilder.needs_building(image_dir, image_name)
 
-    expected_image_tag = gitutils.last_git_modified(str(git_repo / 'image'))
-    expected_image_spec = f'{image_name}:{expected_image_tag}'
+    # Build the image
+    imagebuilder.ensure_image(image_dir, image_name)
 
-    assert client.images.get(expected_image_spec) is not None
+    # Validate that the image we expect to be built / tagged is
+    expected_image_tag_2 = gitutils.last_git_modified(image_dir)
+    expected_image_spec_2 = f'{image_name}:{expected_image_tag_2}'
+    assert client.images.get(expected_image_spec_2) is not None
 
-    assert client.containers.run(expected_image_spec, 'cat /nonce').decode() == nonce_2
+    # Validate that the image being built is actually what we wanted
+    assert client.containers.run(expected_image_spec_2, 'cat /nonce').decode() == nonce_2
+
+    # Push the image, and verify that we now know we don't need to build it anymore
+    assert imagebuilder.needs_building(image_dir, image_name)
+    client.images.push(expected_image_spec_2)
+    assert not imagebuilder.needs_building(image_dir, image_name)
