@@ -23,8 +23,17 @@ def test_missing_image():
     """
     Test that a known-missing image does *not* exist
     """
+    # Test a tag that does not exist
     manifest = get_image_manifest('library/ubuntu:watwatwat')
     assert manifest is None
 
     manifest = get_image_manifest('gcr.io/google-containers/busybox:watwatwat')
+    assert manifest is None
+
+    # Test an *image* that does not exist.
+    manifest = get_image_manifest('yuvipanda/8e338f70a44fe668673603da86ba:latest')
+    assert manifest is None
+
+    # Test an *image* that does not exist.
+    manifest = get_image_manifest('gcr.io/google-containers/8e338f70a44fe668673603da86ba:latest')
     assert manifest is None

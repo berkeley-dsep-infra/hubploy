@@ -72,9 +72,12 @@ def get_image_manifest(image_spec):
             headers={'Authorization': 'Bearer {}'.format(token)},
         )
 
-        if resp.status_code == 404:
+        if resp.status_code == 404 or resp.status_code == 401:
             # Image does not exist
+            # 401 on the *second* call most likely means the image does not exist
             return None
+        if resp.status_code != 200:
+            resp.raise_for_status()
         return resp.json()
     elif resp.status_code == 404:
         return None
