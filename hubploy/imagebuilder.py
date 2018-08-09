@@ -77,6 +77,9 @@ def main():
         client = docker.from_env()
 
         repository, tag = image_spec.rsplit(':', 1)
-        push_progress = client.images.push(repository, tag, decode=True)
+        push_progress = client.images.push(repository, tag, decode=True, stream=True)
         for l in push_progress:
+            # FIXME: Nicer output here
             print(l)
+    else:
+        print(f'Image {args.image_name} already up to date')
