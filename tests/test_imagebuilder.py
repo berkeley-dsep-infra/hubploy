@@ -19,7 +19,7 @@ def git_repo():
     """
     with tempfile.TemporaryDirectory() as d:
         subprocess.check_output(['git', 'init'], cwd=d)
-        yield pathlib.Path(d)
+        yield d
 
 @pytest.fixture
 def open_port():
@@ -75,8 +75,8 @@ def test_imagebuild(git_repo, local_registry):
     image_dir = os.path.join(git_repo, 'image')
 
     # Set up image directory & Dockerfile
-    os.makedirs(git_repo / 'image')
-    with open(git_repo / 'image/Dockerfile', 'w') as f:
+    os.makedirs(image_dir)
+    with open(os.path.join(image_dir, 'Dockerfile'), 'w') as f:
         f.write('FROM busybox\n')
         f.write('ADD nonce /')
 
@@ -88,7 +88,7 @@ def test_imagebuild(git_repo, local_registry):
     assert imagebuilder.needs_building(image_dir, image_name)
 
     # Build the image
-    imagebuilder.build_image(image_dir, image_name)
+    imagebuilder.build_image(image_dir, imagebuilder.make_imagespec(image_dir, image_name))
 
     # Validate that the image we expect to be built / tagged is
     expected_image_tag_1 = gitutils.last_git_modified(image_dir)
@@ -111,7 +111,7 @@ def test_imagebuild(git_repo, local_registry):
     assert imagebuilder.needs_building(image_dir, image_name)
 
     # Build the image
-    imagebuilder.build_image(image_dir, image_name)
+    imagebuilder.build_image(image_dir, imagebuilder.make_imagespec(image_dir, image_name))
 
     # Validate that the image we expect to be built / tagged is
     expected_image_tag_2 = gitutils.last_git_modified(image_dir)
