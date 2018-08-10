@@ -3,7 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.6.1
-      - image: registry:v2
+      - image: registry:2
       
     working_directory: ~/repo
 
