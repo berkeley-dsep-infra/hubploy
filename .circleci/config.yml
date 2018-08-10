@@ -3,6 +3,7 @@ jobs:
   build:
     docker:
       - image: circleci/python:3.6.1
+      - image: registry:v2
       
     working_directory: ~/repo
 
@@ -34,6 +35,7 @@ jobs:
           command: |
             source venv/bin/activate
             mkdir -p test-reports/unit
+            export DOCKER_REGISTRY=localhost:5000
             py.test --junitxml=test-reports/unit/results.xml tests/
 
       - store_test_results:

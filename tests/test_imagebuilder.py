@@ -33,11 +33,16 @@ def open_port():
     finally:
         s.close()
 
+
+
 @pytest.fixture
 def local_registry(open_port):
     """
     Fixture to create a local docker registry
     """
+    if 'DOCKER_REGISTRY' in os.environ:
+        # We are running in CI, where we already have a local registry
+        return os.environ['DOCKER_REGISTRY']
     client = docker.from_env()
     container = client.containers.run(
         'registry:2',
