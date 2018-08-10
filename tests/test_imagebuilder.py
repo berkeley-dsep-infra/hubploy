@@ -42,7 +42,8 @@ def local_registry(open_port):
     """
     if 'DOCKER_REGISTRY' in os.environ:
         # We are running in CI, where we already have a local registry
-        return os.environ['DOCKER_REGISTRY']
+        yield os.environ['DOCKER_REGISTRY']
+        return
     client = docker.from_env()
     container = client.containers.run(
         'registry:2',
