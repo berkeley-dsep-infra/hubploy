@@ -30,6 +30,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
+            - /opt/circleci/.pyenv
           key: v1-dependencies-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
         
       - run:
