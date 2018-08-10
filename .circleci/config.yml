@@ -18,7 +18,8 @@ jobs:
       - run:
           name: setup dependencies
           command: |
-            python3.5 -m venv venv
+            pyenv global 3.6.5
+            python3 -m venv venv
             source venv/bin/activate
             pip install -r dev-requirements.txt
             pip install -e .
