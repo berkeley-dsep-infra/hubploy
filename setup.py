@@ -8,7 +8,8 @@ setuptools.setup(
     author="Yuvi Panda",
     packages=setuptools.find_packages(),
     install_requires=[
-        'requests'
+        'requests',
+        'docker'
     ],
     entry_points={
         'console_scripts': [
