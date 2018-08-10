@@ -18,12 +18,14 @@ jobs:
           - v1-dependencies-
 
       - run:
-          name: install dependencies
+          name: setup dependencies
           command: |
             python3 -m venv venv
             source venv/bin/activate
             pip install -r dev-requirements.txt
             pip install -e .
+            git config --global user.email "ci@circleci"
+            git config --global user.name "ci"
 
       - save_cache:
           paths:
@@ -35,6 +37,7 @@ jobs:
           command: |
             source venv/bin/activate
             mkdir -p test-reports/unit
+            # Use local docker registry for our unit tests
             export DOCKER_REGISTRY=localhost:5000
             py.test --junitxml=test-reports/unit/results.xml tests/
 
