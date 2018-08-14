@@ -108,5 +108,7 @@ def main():
             for l in push_progress:
                 # FIXME: Nicer output here
                 print(l)
+                if 'error' in l:
+                    raise ValueError('Pushing failed')
     else:
         print(f'Image {args.image_name} already up to date')
