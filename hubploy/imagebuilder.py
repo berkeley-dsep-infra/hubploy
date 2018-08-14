@@ -23,7 +23,8 @@ def needs_building(client, path, image_name):
     except docker.errors.ImageNotFound:
         return True
     except docker.errors.APIError as e:
-        if e.explanation == 'manifest unknown: manifest unknown':
+        # This message seems to vary across registries?
+        if e.explanation.startswith('manifest unknown: '):
             return True
         else:
             raise
