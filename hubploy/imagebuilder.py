@@ -12,12 +12,11 @@ def make_imagespec(path, image_name):
     return f'{image_name}:{last_commit}'
 
 
-def needs_building(path, image_name):
+def needs_building(client, path, image_name):
     """
     Return true if image in path needs building
     """
     image_spec = make_imagespec(path, image_name)
-    client = docker.from_env()
     try:
         image_manifest = client.images.get_registry_data(image_spec)
         return image_manifest is None
@@ -30,11 +29,11 @@ def needs_building(path, image_name):
             raise
 
 
-def build_image(path, image_spec, build_progress_cb=None):
+def build_image(client, path, image_spec, build_progress_cb=None):
     """
     Build image at path and tag it with image_spec
     """
-    api_client = docker.from_env().api
+    api_client = client.api
     build_output = api_client.build(
         path=path,
         tag=image_spec,
@@ -56,6 +55,23 @@ def main():
         'image_name',
         help='Name of image (including repository) to build, without tag'
     )
+    argparser.add_argument(
+        '--registry-url',
+        help='URL of docker registry to talk to'
+    )
+    # FIXME: Don't do this?
+    argparser.add_argument(
+        '--registry-password',
+        help='Docker registry password'
+    )
+    argparser.add_argument(
+        '--registry-username',
+        help='Docker registry username'
+    )
+    argparser.add_argument(
+        '--push',
+        action='store_true',
+    )
 
     def _print_progress(line):
         if 'stream' in line:
@@ -64,22 +80,30 @@ def main():
             print(line)
     args = argparser.parse_args()
 
+    client = docker.from_env()
+    if args.registry_url:
+        client.login(
+            username=args.registry_username,
+            password=args.registry_password,
+            registry=args.registry_url
+        )
 
-    if needs_building(args.path, args.image_name):
+    if needs_building(client, args.path, args.image_name):
         print(f'Image {args.image_name} needs to be built...')
         # Determine the image_spec that needs to be built
         image_spec = make_imagespec(args.path, args.image_name)
 
         print(f'Starting to build {image_spec}')
-        build_image(args.path, image_spec, _print_progress)
+        build_image(client, args.path, image_spec, _print_progress)
 
         print(f'Pushing {image_spec}')
         client = docker.from_env()
 
-        repository, tag = image_spec.rsplit(':', 1)
-        push_progress = client.images.push(repository, tag, decode=True, stream=True)
-        for l in push_progress:
-            # FIXME: Nicer output here
-            print(l)
+        if args.push:
+            repository, tag = image_spec.rsplit(':', 1)
+            push_progress = client.images.push(repository, tag, decode=True, stream=True)
+            for l in push_progress:
+                # FIXME: Nicer output here
+                print(l)
     else:
         print(f'Image {args.image_name} already up to date')

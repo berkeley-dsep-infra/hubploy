@@ -91,10 +91,10 @@ def test_imagebuild(git_repo, local_registry):
     nonce_1 = commit_nonce(git_repo)
 
     # We haven't build this image so far, so it must need building
-    assert imagebuilder.needs_building(image_dir, image_name)
+    assert imagebuilder.needs_building(client, image_dir, image_name)
 
     # Build the image
-    imagebuilder.build_image(image_dir, imagebuilder.make_imagespec(image_dir, image_name))
+    imagebuilder.build_image(client, image_dir, imagebuilder.make_imagespec(image_dir, image_name))
 
     # Validate that the image we expect to be built / tagged is
     expected_image_tag_1 = gitutils.last_git_modified(image_dir)
@@ -105,19 +105,19 @@ def test_imagebuild(git_repo, local_registry):
     assert client.containers.run(expected_image_spec_1, 'cat /nonce').decode() == nonce_1
 
     # Push the image, and verify that we now know we don't need to build it
-    assert imagebuilder.needs_building(image_dir, image_name)
+    assert imagebuilder.needs_building(client, image_dir, image_name)
     client.images.push(expected_image_spec_1)
-    assert not imagebuilder.needs_building(image_dir, image_name)
+    assert not imagebuilder.needs_building(client, image_dir, image_name)
 
     # Round 2! We do this to make sure we handle rebuilding properly
     # Make a commit with a new random nonce in git repository
     nonce_2 = commit_nonce(git_repo)
 
     # We haven't built the image since this commit, so it must need building
-    assert imagebuilder.needs_building(image_dir, image_name)
+    assert imagebuilder.needs_building(client, image_dir, image_name)
 
     # Build the image
-    imagebuilder.build_image(image_dir, imagebuilder.make_imagespec(image_dir, image_name))
+    imagebuilder.build_image(client, image_dir, imagebuilder.make_imagespec(image_dir, image_name))
 
     # Validate that the image we expect to be built / tagged is
     expected_image_tag_2 = gitutils.last_git_modified(image_dir)
@@ -128,6 +128,6 @@ def test_imagebuild(git_repo, local_registry):
     assert client.containers.run(expected_image_spec_2, 'cat /nonce').decode() == nonce_2
 
     # Push the image, and verify that we now know we don't need to build it anymore
-    assert imagebuilder.needs_building(image_dir, image_name)
+    assert imagebuilder.needs_building(client, image_dir, image_name)
     client.images.push(expected_image_spec_2)
-    assert not imagebuilder.needs_building(image_dir, image_name)
+    assert not imagebuilder.needs_building(client, image_dir, image_name)
