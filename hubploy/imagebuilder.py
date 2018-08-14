@@ -44,6 +44,8 @@ def build_image(client, path, image_spec, build_progress_cb=None):
     for line in build_output:
         if build_progress_cb:
             build_progress_cb(line)
+        if 'error' in line:
+            raise ValueError('Build failed')
 
 
 def main():

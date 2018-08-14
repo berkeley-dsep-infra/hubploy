@@ -131,3 +131,15 @@ def test_imagebuild(git_repo, local_registry):
     assert imagebuilder.needs_building(client, image_dir, image_name)
     client.images.push(expected_image_spec_2)
     assert not imagebuilder.needs_building(client, image_dir, image_name)
+
+
+def test_build_fail(git_repo):
+    """
+    Throw an error if the build fails
+    """
+    client = docker.from_env()
+    with open(os.path.join(git_repo, 'Dockerfile'), 'w') as f:
+        f.write('FROM busybox')
+        f.write('RUN non-existent')
+    with pytest.raises(ValueError):
+        imagebuilder.build_image(client, git_repo, 'test:latest')
