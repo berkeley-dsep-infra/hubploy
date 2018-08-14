@@ -100,10 +100,9 @@ def main():
         print(f'Starting to build {image_spec}')
         build_image(client, args.path, image_spec, _print_progress)
 
-        print(f'Pushing {image_spec}')
-        client = docker.from_env()
 
         if args.push:
+            print(f'Pushing {image_spec}')
             repository, tag = image_spec.rsplit(':', 1)
             push_progress = client.images.push(repository, tag, decode=True, stream=True)
             for l in push_progress:
