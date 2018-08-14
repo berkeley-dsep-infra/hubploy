@@ -78,7 +78,8 @@ def main():
 
     def _print_progress(line):
         if 'stream' in line:
-            print(line['stream'], end='')
+            # FIXME: end='' doesn't seem to work?
+            print(line['stream'].rstrip())
         else:
             print(line)
     args = argparser.parse_args()
