@@ -92,10 +92,11 @@ def main():
             registry=args.registry_url
         )
 
+    # Determine the image_spec that needs to be built
+    image_spec = make_imagespec(args.path, args.image_name)
+
     if needs_building(client, args.path, args.image_name):
         print(f'Image {args.image_name} needs to be built...')
-        # Determine the image_spec that needs to be built
-        image_spec = make_imagespec(args.path, args.image_name)
 
         print(f'Starting to build {image_spec}')
         build_image(client, args.path, image_spec, _print_progress)
@@ -111,4 +112,4 @@ def main():
                 if 'error' in l:
                     raise ValueError('Pushing failed')
     else:
-        print(f'Image {args.image_name} already up to date')
+        print(f'Image {image_spec}: already up to date')
