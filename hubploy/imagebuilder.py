@@ -7,8 +7,8 @@ import json
 from hubploy import gitutils
 
 
-def make_imagespec(path, image_name):
-    last_commit = gitutils.last_git_modified(path)
+def make_imagespec(path, image_name, last=1):
+    last_commit = gitutils.last_git_modified(path, last)
     return f'{image_name}:{last_commit}'
 
 
@@ -97,6 +97,15 @@ def main():
 
     if needs_building(client, args.path, args.image_name):
         print(f'Image {args.image_name} needs to be built...')
+
+        # Pull last built image if we can
+        for i in range(2, 5):
+            image = args.image_name
+            tag = gitutils.last_git_modified(args.path, i)
+            try:
+                client.images.pull(image, tag)
+            except docker.errors.APIError as e:
+                print(str(e))
 
         print(f'Starting to build {image_spec}')
         build_image(client, args.path, image_spec, _print_progress)
