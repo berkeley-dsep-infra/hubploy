@@ -14,6 +14,7 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'hubploy-image-builder = hubploy.imagebuilder:main',
+            'hubploy-helm-deploy = hubploy.helm:main'
         ],
     },
 
