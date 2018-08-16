@@ -42,7 +42,6 @@ def helm_upgrade(
     cmd = [
         'helm',
         'upgrade',
-        '--debug',
         '--wait',
         '--install',
         '--namespace', namespace,
