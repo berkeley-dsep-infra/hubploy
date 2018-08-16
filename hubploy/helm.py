@@ -10,7 +10,10 @@ deployments/
     - secrets/
       - prod.yaml
       - staging.yaml
-    - config.yaml
+    - config/
+      - common.yaml
+      - staging.yaml
+      - prod.yaml
 """
 import itertools
 import subprocess
@@ -67,7 +70,9 @@ def deploy(
         - image/
         - secrets/
             - {environment}.yaml
-        - config.yaml
+        - config/
+          - common.yaml
+          - {environment}.yaml
 
     A docker image from deployments/{deployment}/image is expected to be
     already built and available with imagebuilder.
@@ -79,7 +84,8 @@ def deploy(
     if namespace is None:
         namespace = name
     config_files = [f for f in [
-        os.path.join('deployments', deployment, 'config.yaml'),
+        os.path.join('deployments', deployment, 'config', 'common.yaml'),
+        os.path.join('deployments', deployment, 'config', f'{environment}.yaml'),
         os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
     ] if os.path.exists(f)]
 
