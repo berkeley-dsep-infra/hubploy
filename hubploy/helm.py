@@ -78,19 +78,24 @@ def deploy(
 
     if namespace is None:
         namespace = name
-    config_files = [
+    config_files = [f for f in [
         os.path.join('deployments', deployment, 'config.yaml'),
         os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
-    ]
+    ] if os.path.exists(f)]
 
-    image_tag = gitutils.last_git_modified(
-        os.path.join('deployments', deployment, 'image')
-    )
+    image_path = os.path.join('deployments', deployment, 'image')
+    if os.path.exists(image_path):
+        image_tag = gitutils.last_git_modified(
+            os.path.join('deployments', deployment, 'image')
+        )
 
-    # FIXME: Make this more configurable
-    config_overrides = {
-        'jupyterhub.singleuser.image.tag': image_tag
-    }
+        # FIXME: Make this more configurable
+        config_overrides = {
+            'jupyterhub.singleuser.image.tag': image_tag
+        }
+    else:
+        config_overrides = {}
+
 
     helm_upgrade(
         name,
