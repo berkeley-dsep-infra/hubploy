@@ -17,6 +17,7 @@ import subprocess
 from hubploy import gitutils
 import os
 import argparse
+import shutil
 
 
 def helm_upgrade(
@@ -26,6 +27,15 @@ def helm_upgrade(
     config_files,
     config_overrides
 ):
+    # Clear charts and do a helm dep up before installing
+    # Clearing charts is important so we don't deploy charts that
+    # have been removed from requirements.yaml
+    # FIXME: verify if this is actually true
+    shutil.rmtree(os.path.join(chart, 'charts'), ignore_errors=True)
+    subprocess.check_call([
+        'helm', 'dep', 'up'
+    ], cwd=chart)
+
     cmd = [
         'helm',
         'upgrade',
