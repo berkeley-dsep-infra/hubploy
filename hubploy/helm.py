@@ -57,6 +57,7 @@ def deploy(
     chart,
     environment,
     namespace=None,
+    config_overrides=None,
 ):
     """
     Deploy a JupyterHub.
@@ -78,6 +79,9 @@ def deploy(
     `jupyterhub.singleuser.image.tag` will be automatically set to this image
     tag.
     """
+    if config_overrides is None:
+        config_overrides = []
+
     name = f'{deployment}-{environment}'
 
     if namespace is None:
@@ -94,13 +98,7 @@ def deploy(
             os.path.join('deployments', deployment, 'image')
         )
 
-        # FIXME: Make this more configurable
-        config_overrides = {
-            'jupyterhub.singleuser.image.tag': image_tag
-        }
-    else:
-        config_overrides = {}
-
+        config_overrides.append(f'jupyterhub.singleuser.image.tag={image_tag}')
 
     helm_upgrade(
         name,
@@ -127,10 +125,14 @@ def main():
         '--namespace',
         default=None
     )
+    argparser.add_argument(
+        '--set',
+        action='append',
+    )
 
     args = argparser.parse_args()
 
-    deploy(args.deployment, args.chart, args.environment, args.namespace)
+    deploy(args.deployment, args.chart, args.environment, args.namespace, args.set)
 
 if __name__ == '__main__':
     main()
