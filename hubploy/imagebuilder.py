@@ -50,6 +50,13 @@ def build_image(client, path, image_spec, cache_from=None, build_progress_cb=Non
             raise ValueError('Build failed')
 
 
+def build_repo2docker(client, path, image_spec):
+    from repo2docker.app import Repo2Docker
+    builder = Repo2Docker()
+    builder.initialize(['--subdir', path, '--image-name', image_spec, '--no-run', '.'])
+    builder.start()
+
+
 def pull_image(client, image_name, tag, pull_progress_cb):
     """
     Pull given docker image
@@ -92,6 +99,11 @@ def main():
         '--push',
         action='store_true',
     )
+    argparser.add_argument(
+        '--repo2docker',
+        action='store_true',
+        help='Build using repo2docker',
+    )
 
     def _print_progress(key, line):
         if key in line:
@@ -129,7 +141,10 @@ def main():
                 print(str(e))
 
         print(f'Starting to build {image_spec}')
-        build_image(client, args.path, image_spec, cache_from, partial(_print_progress, 'stream'))
+        if args.repo2docker:
+            build_repo2docker(client, args.path, image_spec)
+        else:
+            build_image(client, args.path, image_spec, cache_from, partial(_print_progress, 'stream'))
 
         if args.push:
             print(f'Pushing {image_spec}')
