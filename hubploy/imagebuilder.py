@@ -54,7 +54,7 @@ def build_repo2docker(client, path, image_spec):
     from repo2docker.app import Repo2Docker
     builder = Repo2Docker()
     builder.initialize(['--subdir', path, '--image-name', image_spec,
-                        '--no-run', '--user-name', 'jovyan', '.'])
+                        '--no-run', '--user-name', 'jovyan', '--user-id', '1000', '.'])
     builder.start()
 
 
