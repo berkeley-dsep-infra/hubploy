@@ -53,7 +53,7 @@ def build_image(client, path, image_spec, cache_from=None, build_progress_cb=Non
 def build_repo2docker(client, path, image_spec):
     ENTRYPOINT = '''\
 #!/bin/bash
-cp -ra /srv/home/ -T ${HOME}
+cp --archive --recursive --no-clobber /srv/home/ -T ${HOME}
 if [ -x binder/start ]; then
   exec binder/start "$@"
 else
