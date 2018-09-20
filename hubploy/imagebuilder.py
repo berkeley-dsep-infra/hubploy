@@ -17,7 +17,6 @@ def needs_building(client, path, image_name):
     """
     Return true if image in path needs building
     """
-    return True
     image_spec = make_imagespec(path, image_name)
     try:
         image_manifest = client.images.get_registry_data(image_spec)
