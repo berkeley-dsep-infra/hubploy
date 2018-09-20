@@ -17,6 +17,7 @@ def needs_building(client, path, image_name):
     """
     Return true if image in path needs building
     """
+    return True
     image_spec = make_imagespec(path, image_name)
     try:
         image_manifest = client.images.get_registry_data(image_spec)
@@ -51,10 +52,33 @@ def build_image(client, path, image_spec, cache_from=None, build_progress_cb=Non
 
 
 def build_repo2docker(client, path, image_spec):
+    ENTRYPOINT = '''\
+#!/bin/bash
+cp -ra /srv/home/ -T ${HOME}
+if [ -x binder/start ]; then
+  exec binder/start "$@"
+else
+  exec "$@"
+fi
+'''
+    NEWLINE = '\n'
+    ESCAPED_NEWLINE = '\\n'
+    APPENDIX = f'''
+USER root
+RUN rm -rf .npm .cache && cp -ra ${{HOME}} /srv/home
+RUN printf '{ENTRYPOINT.replace(NEWLINE, ESCAPED_NEWLINE)}' > /entrypoint.sh && chmod +x /entrypoint.sh
+
+USER ${{NB_USER}}
+ENTRYPOINT ["/entrypoint.sh"]
+'''
     from repo2docker.app import Repo2Docker
     builder = Repo2Docker()
     builder.initialize(['--subdir', path, '--image-name', image_spec,
-                        '--no-run', '--user-name', 'jovyan', '--user-id', '1000', '.'])
+                        '--no-run',
+                        '--user-name', 'jovyan',
+                        '--user-id', '1000',
+                        '--appendix', APPENDIX,
+                        '.',])
     builder.start()
 
 
