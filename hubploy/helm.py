@@ -125,7 +125,7 @@ def main():
     )
     argparser.add_argument(
         'environment',
-        choices=['staging', 'prod']
+        choices=['develop', 'staging', 'prod']
     )
     argparser.add_argument(
         '--namespace',
