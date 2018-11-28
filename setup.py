@@ -9,7 +9,8 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'requests',
-        'docker'
+        'docker',
+        'git+https://github.com/jupyter/repo2docker.git',
     ],
     entry_points={
         'console_scripts': [
