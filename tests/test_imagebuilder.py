@@ -139,7 +139,7 @@ def test_build_fail(git_repo):
     """
     client = docker.from_env()
     with open(os.path.join(git_repo, 'Dockerfile'), 'w') as f:
-        f.write('FROM busybox')
+        f.write('FROM busybox\n')
         f.write('RUN non-existent')
     with pytest.raises(ValueError):
         imagebuilder.build_image(client, git_repo, 'test:latest')
