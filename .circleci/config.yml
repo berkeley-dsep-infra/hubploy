@@ -18,7 +18,7 @@ jobs:
       - run:
           name: setup dependencies
           command: |
-            pyenv install 3.6.3
+            pyenv install --skip-existing 3.6.3
             pyenv global 3.6.3
             pyenv rehash
             python3 -m venv venv
