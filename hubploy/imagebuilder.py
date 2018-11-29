@@ -6,6 +6,7 @@ import argparse
 import json
 from functools import partial
 from hubploy import gitutils
+from repo2docker.app import Repo2Docker
 
 
 def make_imagespec(path, image_name, last=1):
@@ -31,23 +32,13 @@ def needs_building(client, path, image_name):
             raise
 
 
-def build_image(client, path, image_spec, cache_from=None, build_progress_cb=None):
-    """
-    Build image at path and tag it with image_spec
-    """
-    api_client = client.api
-    build_output = api_client.build(
-        path=path,
-        tag=image_spec,
-        rm=True,
-        decode=True,
-        cache_from=cache_from
-    )
-    for line in build_output:
-        if build_progress_cb:
-            build_progress_cb(line)
-        if 'error' in line:
-            raise ValueError('Build failed')
+def build_image(client, path, image_spec, cache_from=None):
+    builder = Repo2Docker()
+    builder.initialize(['--subdir', path, '--image-name', image_spec,
+                        '--no-run', '--user-name', 'jovyan',
+                        '--user-id', '1000', '.'])
+    builder.start()
+
 
 
 def pull_image(client, image_name, tag, pull_progress_cb):
@@ -92,6 +83,11 @@ def main():
         '--push',
         action='store_true',
     )
+    argparser.add_argument(
+        '--repo2docker',
+        action='store_true',
+        help='Build using repo2docker',
+    )
 
     def _print_progress(key, line):
         if key in line:
@@ -129,7 +125,7 @@ def main():
                 print(str(e))
 
         print(f'Starting to build {image_spec}')
-        build_image(client, args.path, image_spec, cache_from, partial(_print_progress, 'stream'))
+        build_image(client, args.path, image_spec, cache_from)
 
         if args.push:
             print(f'Pushing {image_spec}')
