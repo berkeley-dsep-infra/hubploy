@@ -10,7 +10,8 @@ setuptools.setup(
     install_requires=[
         'requests',
         'docker',
-        'git+https://github.com/jupyter/repo2docker.git',
+        # FIXME: I can't get dependency_links to work booo. We need master right now.
+        'jupyter-repo2docker',
     ],
     entry_points={
         'console_scripts': [
