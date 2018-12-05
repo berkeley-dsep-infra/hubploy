@@ -75,28 +75,3 @@ def build_if_needed(client, path, image_name, commit_range, push=False):
     else:
         print(f'Image {image_spec}: already up to date')
         return False
-
-def main():
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        'path',
-        help='Path to directory with dockerfile'
-    )
-    argparser.add_argument(
-        'image_name',
-        help='Name of image (including repository) to build, without tag'
-    )
-    argparser.add_argument(
-        '--commit-range',
-        help='Trigger image rebuilds only if path has changed in this commit range'
-    )
-    argparser.add_argument(
-        '--push',
-        action='store_true',
-    )
-
-    args = argparser.parse_args()
-
-    client = docker.from_env()
-
-    build_if_needed(client, args.path, args.image_name, args.commit_range, args.push)
