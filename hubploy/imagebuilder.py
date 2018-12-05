@@ -32,11 +32,15 @@ def needs_building(client, path, image_name):
             raise
 
 
-def build_image(client, path, image_spec, cache_from=None):
+def build_image(client, path, image_spec, cache_from=None, push=False):
     builder = Repo2Docker()
-    builder.initialize(['--subdir', path, '--image-name', image_spec,
-                        '--no-run', '--user-name', 'jovyan',
-                        '--user-id', '1000', '.'])
+    args = ['--subdir', path, '--image-name', image_spec,
+            '--no-run', '--user-name', 'jovyan',
+            '--user-id', '1000']
+    if push:
+        args.append('--push')
+    args.append('.')
+    builder.initialize(args)
     builder.start()
 
 
@@ -120,21 +124,12 @@ def main():
                 print(f'Trying to pull {image}:{tag}')
                 pull_image(client, image, tag, partial(_print_progress, 'progress'))
                 cache_from.append(f'{image}:{tag}')
+                break
             except Exception as e:
                 # Um, ignore if things fail!
                 print(str(e))
 
         print(f'Starting to build {image_spec}')
-        build_image(client, args.path, image_spec, cache_from)
-
-        if args.push:
-            print(f'Pushing {image_spec}')
-            repository, tag = image_spec.rsplit(':', 1)
-            push_progress = client.images.push(repository, tag, decode=True, stream=True)
-            for l in push_progress:
-                # FIXME: Nicer output here
-                print(l)
-                if 'error' in l:
-                    raise ValueError('Pushing failed')
+        build_image(client, args.path, image_spec, cache_from, args.push)
     else:
         print(f'Image {image_spec}: already up to date')
