@@ -9,27 +9,11 @@ from hubploy import gitutils
 from repo2docker.app import Repo2Docker
 
 
-def make_imagespec(path, image_name, last=1):
-    last_commit = gitutils.last_git_modified(path, last)
-    return f'{image_name}:{last_commit}'
-
-
-def needs_building(client, path, image_name):
-    """
-    Return true if image in path needs building
-    """
-    image_spec = make_imagespec(path, image_name)
-    try:
-        image_manifest = client.images.get_registry_data(image_spec)
-        return image_manifest is None
-    except docker.errors.ImageNotFound:
-        return True
-    except docker.errors.APIError as e:
-        # This message seems to vary across registries?
-        if e.explanation.startswith('manifest unknown: '):
-            return True
-        else:
-            raise
+def make_imagespec(path, image_name):
+    tag = gitutils.last_modified_commit(path)
+    if not tag:
+        tag = 'latest'
+    return f'{image_name}:{tag}'
 
 
 def build_image(client, path, image_spec, cache_from=None, push=False):
@@ -44,8 +28,7 @@ def build_image(client, path, image_spec, cache_from=None, push=False):
     builder.start()
 
 
-
-def pull_image(client, image_name, tag, pull_progress_cb):
+def pull_image(client, image_name, tag):
     """
     Pull given docker image
     """
@@ -57,8 +40,41 @@ def pull_image(client, image_name, tag, pull_progress_cb):
         decode=True
     )
     for line in pull_output:
-        if pull_progress_cb:
-            pull_progress_cb(line)
+        continue
+
+
+def pull_images_for_cache(client, path, image_name, commit_range):
+    # Pull last built image if we can
+    cache_from = []
+    # FIXME: cache_from doesn't work with repo2docker until https://github.com/jupyter/repo2docker/pull/478
+    # is merged. So we just no-op this for now.
+    return cache_from
+    for i in range(2, 5):
+        image = image_name
+        # FIXME: Make this look for last modified since before beginning of commit_range
+        tag = gitutils.last_modified_commit(path, n=i)
+        try:
+            print(f'Trying to pull {image}:{tag}')
+            pull_image(client, image, tag)
+            cache_from.append(f'{image}:{tag}')
+            break
+        except Exception as e:
+            # Um, ignore if things fail!
+            print(str(e))
+
+def build_if_needed(client, path, image_name, commit_range, push=False):
+    image_spec = make_imagespec(path, image_name)
+
+    if (not commit_range) or gitutils.path_touched(path, commit_range=commit_range):
+        print(f'Image {image_spec} needs to be built...')
+
+        cache_from = pull_images_for_cache(client, path, image_name, commit_range)
+        print(f'Starting to build {image_spec}')
+        build_image(client, path, image_spec, cache_from, push)
+        return True
+    else:
+        print(f'Image {image_spec}: already up to date')
+        return False
 
 def main():
     argparser = argparse.ArgumentParser()
@@ -71,65 +87,16 @@ def main():
         help='Name of image (including repository) to build, without tag'
     )
     argparser.add_argument(
-        '--registry-url',
-        help='URL of docker registry to talk to'
-    )
-    # FIXME: Don't do this?
-    argparser.add_argument(
-        '--registry-password',
-        help='Docker registry password'
-    )
-    argparser.add_argument(
-        '--registry-username',
-        help='Docker registry username'
+        '--commit-range',
+        help='Trigger image rebuilds only if path has changed in this commit range'
     )
     argparser.add_argument(
         '--push',
         action='store_true',
     )
-    argparser.add_argument(
-        '--repo2docker',
-        action='store_true',
-        help='Build using repo2docker',
-    )
 
-    def _print_progress(key, line):
-        if key in line:
-            # FIXME: end='' doesn't seem to work?
-            print(line[key].rstrip())
-        else:
-            print(line)
     args = argparser.parse_args()
 
     client = docker.from_env()
-    if args.registry_url:
-        client.login(
-            username=args.registry_username,
-            password=args.registry_password,
-            registry=args.registry_url
-        )
 
-    # Determine the image_spec that needs to be built
-    image_spec = make_imagespec(args.path, args.image_name)
-
-    if needs_building(client, args.path, args.image_name):
-        print(f'Image {args.image_name} needs to be built...')
-
-        # Pull last built image if we can
-        cache_from = []
-        for i in range(2, 5):
-            image = args.image_name
-            tag = gitutils.last_git_modified(args.path, i)
-            try:
-                print(f'Trying to pull {image}:{tag}')
-                pull_image(client, image, tag, partial(_print_progress, 'progress'))
-                cache_from.append(f'{image}:{tag}')
-                break
-            except Exception as e:
-                # Um, ignore if things fail!
-                print(str(e))
-
-        print(f'Starting to build {image_spec}')
-        build_image(client, args.path, image_spec, cache_from, args.push)
-    else:
-        print(f'Image {image_spec}: already up to date')
+    build_if_needed(client, args.path, args.image_name, args.commit_range, args.push)
