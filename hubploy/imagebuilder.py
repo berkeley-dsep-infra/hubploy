@@ -26,7 +26,7 @@ def build_image(client, path, image_spec, cache_from=None, push=False):
             args += ['--cache-from', cf]
 
     if push:
-        args.append('push')
+        args.append('--push')
 
     args.append('.')
 
