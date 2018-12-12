@@ -14,7 +14,7 @@ def last_modified_commit(*paths, n=1, **kwargs):
         '--pretty=format:%h',
         '--',
         *paths
-    ], **kwargs).decode('utf-8')
+    ], **kwargs).decode('utf-8').split('\n')[-1]
 
 
 def last_modified_date(*paths, **kwargs):
