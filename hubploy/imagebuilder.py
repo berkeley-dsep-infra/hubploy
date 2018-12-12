@@ -17,39 +17,37 @@ def make_imagespec(path, image_name):
 
 
 def build_image(client, path, image_spec, cache_from=None, push=False):
-    builder = Repo2Docker()
-    args = ['--subdir', path, '--image-name', image_spec,
-            '--no-run', '--user-name', 'jovyan',
-            '--user-id', '1000']
+    r2d = Repo2Docker()
+    r2d.subdir = path
+    r2d.output_image_spec = image_spec
+    r2d.user_name = 'jovyan'
+    r2d.user_id = 1000
+    r2d.repo = '.'
+    r2d.cache_from = cache_from
+    r2d.initialize()
+    r2d.build()
     if push:
-        args.append('--push')
-    args.append('.')
-    builder.initialize(args)
-    builder.start()
+        r2d.push_image()
 
 
 def pull_image(client, image_name, tag):
     """
     Pull given docker image
     """
-    api_client = client.api
-    pull_output = api_client.pull(
+    pull_output = client.api.pull(
         image_name,
         tag,
         stream=True,
         decode=True
     )
     for line in pull_output:
-        continue
+        pass
 
 
 def pull_images_for_cache(client, path, image_name, commit_range):
     # Pull last built image if we can
     cache_from = []
-    # FIXME: cache_from doesn't work with repo2docker until https://github.com/jupyter/repo2docker/pull/478
-    # is merged. So we just no-op this for now.
-    return cache_from
-    for i in range(2, 5):
+    for i in range(1, 5):
         image = image_name
         # FIXME: Make this look for last modified since before beginning of commit_range
         tag = gitutils.last_modified_commit(path, n=i)
@@ -61,6 +59,8 @@ def pull_images_for_cache(client, path, image_name, commit_range):
         except Exception as e:
             # Um, ignore if things fail!
             print(str(e))
+
+    return cache_from
 
 def build_if_needed(client, path, image_name, commit_range, push=False):
     image_spec = make_imagespec(path, image_name)
