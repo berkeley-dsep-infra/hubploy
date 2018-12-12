@@ -18,16 +18,20 @@ def make_imagespec(path, image_name):
 
 def build_image(client, path, image_spec, cache_from=None, push=False):
     r2d = Repo2Docker()
-    r2d.subdir = path
-    r2d.output_image_spec = image_spec
-    r2d.user_name = 'jovyan'
-    r2d.user_id = 1000
-    r2d.repo = '.'
-    r2d.cache_from = cache_from
-    r2d.initialize()
-    r2d.build()
+    args = ['--subdir', path, '--image-name', image_spec,
+            '--no-run', '--user-name', 'jovyan',
+            '--user-id', '1000']
+    if cache_from:
+        for cf in cache_from:
+            args += ['--cache-from', cf]
+
     if push:
-        r2d.push_image()
+        args.append('push')
+
+    args.append('.')
+
+    r2d.initialize(args)
+    r2d.start()
 
 
 def pull_image(client, image_name, tag):
