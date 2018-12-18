@@ -89,10 +89,12 @@ def main():
         help='Build using repo2docker',
     )
 
-    def _print_if_present(key, line):
+    def _print_progress(key, line):
         if key in line:
             # FIXME: end='' doesn't seem to work?
             print(line[key].rstrip())
+        else:
+            print(line)
     args = argparser.parse_args()
 
     client = docker.from_env()
@@ -116,7 +118,7 @@ def main():
             tag = gitutils.last_git_modified(args.path, i)
             try:
                 print(f'Trying to pull {image}:{tag}')
-                pull_image(client, image, tag, partial(_print_if_present, 'status'))
+                pull_image(client, image, tag, partial(_print_progress, 'progress'))
                 cache_from.append(f'{image}:{tag}')
             except Exception as e:
                 # Um, ignore if things fail!
