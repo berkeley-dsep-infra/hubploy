@@ -99,7 +99,7 @@ def deploy(
 
     image_path = os.path.join('deployments', deployment, 'image')
     if os.path.exists(image_path):
-        image_tag = gitutils.last_git_modified(
+        image_tag = gitutils.last_modified_commit(
             os.path.join('deployments', deployment, 'image')
         )
 
@@ -113,35 +113,3 @@ def deploy(
         config_overrides,
         version
     )
-
-
-def main():
-    argparser = argparse.ArgumentParser()
-    argparser.add_argument(
-        'deployment'
-    )
-    argparser.add_argument(
-        'chart'
-    )
-    argparser.add_argument(
-        'environment',
-        choices=['develop', 'staging', 'prod']
-    )
-    argparser.add_argument(
-        '--namespace',
-        default=None
-    )
-    argparser.add_argument(
-        '--set',
-        action='append',
-    )
-    argparser.add_argument(
-        '--version',
-    )
-
-    args = argparser.parse_args()
-
-    deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version)
-
-if __name__ == '__main__':
-    main()

@@ -25,7 +25,6 @@ jobs:
             source venv/bin/activate
             pip install -r dev-requirements.txt
             pip install -e .
-            pip install git+https://github.com/jupyter/repo2docker.git@master
             git config --global user.email "ci@circleci"
             git config --global user.name "ci"
 

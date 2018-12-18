@@ -86,51 +86,23 @@ def test_imagebuild(git_repo, local_registry):
         f.write('FROM busybox\n')
         f.write('ADD nonce /')
 
-    # Round 1
-    # Make a commit with a random nonce in git repository
-    nonce_1 = commit_nonce(git_repo)
+    nonce = commit_nonce(git_repo)
 
-    # We haven't build this image so far, so it must need building
-    assert imagebuilder.needs_building(client, image_dir, image_name)
+    cur_dir = os.getcwd()
+    try:
+        os.chdir(git_repo)
 
-    # Build the image
-    imagebuilder.build_image(client, image_dir, imagebuilder.make_imagespec(image_dir, image_name))
+        image_spec = imagebuilder.make_imagespec(image_dir, image_name)
+        client = docker.from_env()
+        imagebuilder.build_image(client, image_dir, image_spec, cache_from=None, push=True)
+        client.images.remove(image_spec)
 
-    # Validate that the image we expect to be built / tagged is
-    expected_image_tag_1 = gitutils.last_git_modified(image_dir)
-    expected_image_spec_1 = f'{image_name}:{expected_image_tag_1}'
-    assert client.images.get(expected_image_spec_1) is not None
+        with pytest.raises(docker.errors.ImageNotFound):
+            client.images.get(image_spec)
 
-    # Validate that the image being built is actually what we wanted
-    assert client.containers.run(expected_image_spec_1, 'cat /nonce').decode() == nonce_1
-
-    # Push the image, and verify that we now know we don't need to build it
-    assert imagebuilder.needs_building(client, image_dir, image_name)
-    client.images.push(expected_image_spec_1)
-    assert not imagebuilder.needs_building(client, image_dir, image_name)
-
-    # Round 2! We do this to make sure we handle rebuilding properly
-    # Make a commit with a new random nonce in git repository
-    nonce_2 = commit_nonce(git_repo)
-
-    # We haven't built the image since this commit, so it must need building
-    assert imagebuilder.needs_building(client, image_dir, image_name)
-
-    # Build the image
-    imagebuilder.build_image(client, image_dir, imagebuilder.make_imagespec(image_dir, image_name))
-
-    # Validate that the image we expect to be built / tagged is
-    expected_image_tag_2 = gitutils.last_git_modified(image_dir)
-    expected_image_spec_2 = f'{image_name}:{expected_image_tag_2}'
-    assert client.images.get(expected_image_spec_2) is not None
-
-    # Validate that the image being built is actually what we wanted
-    assert client.containers.run(expected_image_spec_2, 'cat /nonce').decode() == nonce_2
-
-    # Push the image, and verify that we now know we don't need to build it anymore
-    assert imagebuilder.needs_building(client, image_dir, image_name)
-    client.images.push(expected_image_spec_2)
-    assert not imagebuilder.needs_building(client, image_dir, image_name)
+        assert client.containers.run(image_spec, 'cat /nonce').decode().strip() == nonce
+    finally:
+        os.chdir(cur_dir)
 
 
 def test_build_fail(git_repo):
