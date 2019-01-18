@@ -28,7 +28,7 @@ def build_image(client, path, image_spec, cache_from=None, push=False):
     r2d.initialize()
     r2d.build()
     if push:
-        r2d.push()
+        r2d.push_image()
 
 
 def pull_image(client, image_name, tag):
