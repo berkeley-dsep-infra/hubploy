@@ -53,4 +53,5 @@ def main():
             auth.registry_auth(args.deployment)
         imagebuilder.build_deployment(client, args.deployment, args.commit_range, args.push)
     elif args.command == 'deploy':
+        auth.cluster_auth(args.deployment)
         helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version)

@@ -42,6 +42,7 @@ def registry_auth_gcloud(deployment, project, service_key):
         'gcloud', 'auth', 'configure-docker'
     ])
 
+
 def cluster_auth(deployment):
     """
     Do appropriate cluster authentication for given deployment
@@ -77,6 +78,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     subprocess.check_call([
         'gcloud', 'container', 'clusters',
         f'--zone={zone}',
+        f'--project={project}',
         'get-credentials', cluster
     ])
 
