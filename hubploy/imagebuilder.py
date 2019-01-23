@@ -3,9 +3,11 @@ Builds docker images from directories when necessary
 """
 import docker
 import argparse
+import os
 import json
 from functools import partial
 from hubploy import gitutils
+from hubploy.config import get_config
 from repo2docker.app import Repo2Docker
 
 
@@ -76,3 +78,11 @@ def build_if_needed(client, path, image_name, commit_range, push=False):
     else:
         print(f'Image {image_spec}: already up to date')
         return False
+
+def build_deployment(client, deployment, commit_range, push=False):
+    config = get_config(deployment)
+
+    image_path = os.path.abspath(os.path.join('deployments', deployment, 'image'))
+    image_name = config['images']['image_name']
+
+    build_if_needed(client, image_path, image_name, commit_range, push)

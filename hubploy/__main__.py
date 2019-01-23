@@ -1,5 +1,5 @@
 import argparse
-from hubploy import imagebuilder, helm
+from hubploy import imagebuilder, helm, auth
 import docker
 
 
@@ -9,12 +9,8 @@ def main():
     build_parser = subparsers.add_parser('build', help='Build an image from given path')
 
     build_parser.add_argument(
-        'path',
+        'deployment',
         help='Path to directory with dockerfile'
-    )
-    build_parser.add_argument(
-        'image_name',
-        help='Name of image (including repository) to build, without tag'
     )
     build_parser.add_argument(
         '--commit-range',
@@ -53,6 +49,8 @@ def main():
 
     if args.command == 'build':
         client = docker.from_env()
-        imagebuilder.build_if_needed(client, args.path, args.image_name, args.commit_range, args.push)
+        if args.push:
+            auth.registry_auth(args.deployment)
+        imagebuilder.build_deployment(client, args.deployment, args.commit_range, args.push)
     elif args.command == 'deploy':
         helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version)

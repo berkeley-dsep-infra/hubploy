@@ -18,6 +18,7 @@ deployments/
 import itertools
 import subprocess
 from hubploy import gitutils
+from hubploy.config import get_config
 import os
 import argparse
 import shutil
@@ -61,7 +62,7 @@ def deploy(
     chart,
     environment,
     namespace=None,
-    config_overrides=None,
+    helm_config_overrides=None,
     version=None,
 ):
     """
@@ -84,14 +85,16 @@ def deploy(
     `jupyterhub.singleuser.image.tag` will be automatically set to this image
     tag.
     """
-    if config_overrides is None:
-        config_overrides = []
+    if helm_config_overrides is None:
+        helm_config_overrides = []
+
+    config = get_config(deployment)
 
     name = f'{deployment}-{environment}'
 
     if namespace is None:
         namespace = name
-    config_files = [f for f in [
+    helm_config_files = [f for f in [
         os.path.join('deployments', deployment, 'config', 'common.yaml'),
         os.path.join('deployments', deployment, 'config', f'{environment}.yaml'),
         os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
@@ -103,13 +106,18 @@ def deploy(
             os.path.join('deployments', deployment, 'image')
         )
 
-        config_overrides.append(f'jupyterhub.singleuser.image.tag={image_tag}')
+        helm_config_overrides.append(f'jupyterhub.singleuser.image.tag={image_tag}')
+
+        if 'images' in config:
+            image_name = config['images'].get('image_name')
+            if image_name:
+                helm_config_overrides.append(f'jupyterhub.singleuser.image.name={image_name}')
 
     helm_upgrade(
         name,
         namespace,
         chart,
-        config_files,
-        config_overrides,
+        helm_config_files,
+        helm_config_overrides,
         version
     )
