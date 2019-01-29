@@ -5,17 +5,36 @@ import subprocess
 import os
 
 
+def first_alpha(s):
+    """
+    Returns the length of the shortest substring of the input that
+    contains an alpha character.
+    """
+    for i in range(len(s)):
+        if s[i].isalpha(): return i+1
+    raise Exception("No alpha characters in string: {}".format(s))
+
+def substring_with_alpha(s, min_len=7):
+    """
+    Returns the shortest substring of the input that
+    contains an alpha character.
+
+    Used to avoid helm/go bug that converts a string with all digit
+    characters into an exponential.
+    """
+    return s[:max(min_len, first_alpha(s))]
+
 def last_modified_commit(*paths, n=1, **kwargs):
     """Get the last commit to modify the given paths"""
-    return subprocess.check_output([
+    commit_hash = subprocess.check_output([
         'git',
         'log',
         '-n', str(n),
-        '--pretty=format:%h',
+        '--pretty=format:%H',
         '--',
         *paths
     ], **kwargs).decode('utf-8').split('\n')[-1]
-
+    return substring_with_alpha(commit_hash)
 
 def last_modified_date(*paths, **kwargs):
     """Return the last modified date (as a string) for the given paths"""
