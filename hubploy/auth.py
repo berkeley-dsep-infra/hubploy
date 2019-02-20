@@ -19,6 +19,10 @@ def registry_auth(deployment):
             registry_auth_gcloud(
                 deployment, **registry['gcloud']
             )
+        if provider == 'aws':
+            registry_auth_aws(
+                deployment, **registry['aws']
+            )
         else:
             raise ValueError(f'Unknown provider {provider} found in hubploy.yaml')
 
@@ -26,6 +30,26 @@ def registry_auth(deployment):
 def registry_auth_gcloud(deployment, project, service_key):
     """
     Setup GCR authentication with a service_key
+
+    This changes *global machine state* on where docker can push to!
+    """
+    service_key_path = os.path.join(
+        'deployments', deployment, 'secrets', service_key
+    )
+    subprocess.check_call([
+        'gcloud', 'auth',
+        'activate-service-account',
+        '--key-file', os.path.abspath(service_key_path)
+    ])
+
+    subprocess.check_call([
+        'gcloud', 'auth', 'configure-docker'
+    ])
+
+
+def registry_auth_aws(deployment, project, service_key):
+    """
+    Setup AWS authentication with a service_key
 
     This changes *global machine state* on where docker can push to!
     """
@@ -56,6 +80,10 @@ def cluster_auth(deployment):
             cluster_auth_gcloud(
                 deployment, **cluster['gcloud']
             )
+        elif provider == 'aws':
+            cluster_auth_aws(
+                deployment, **cluster['aws']
+            )
         else:
             raise ValueError(f'Unknown provider {provider} found in hubploy.yaml')
 
@@ -82,3 +110,25 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
+
+def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
+    """
+    Setup AWS authentication with service_key
+
+    This changes *global machine state* on what current kubernetes cluster is!
+    """
+    service_key_path = os.path.join(
+        'deployments', deployment, 'secrets', service_key
+    )
+    subprocess.check_call([
+        'gcloud', 'auth',
+        'activate-service-account',
+        '--key-file', os.path.abspath(service_key_path)
+    ])
+
+    subprocess.check_call([
+        'gcloud', 'container', 'clusters',
+        f'--zone={zone}',
+        f'--project={project}',
+        'get-credentials', cluster
+    ])
