@@ -115,7 +115,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     ])
 
 
-def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
+def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     """
     Setup AWS authentication with service_key
 
