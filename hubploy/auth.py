@@ -128,15 +128,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
-    subprocess.check_call([
-        'gcloud', 'auth',
-        'activate-service-account',
-        '--key-file', os.path.abspath(service_key_path)
-    ])
+    os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
 
     subprocess.check_call([
-        'gcloud', 'container', 'clusters',
-        f'--zone={zone}',
-        f'--project={project}',
-        'get-credentials', cluster
+        'aws', 'eks',
+        'update-kubeconfig',
+        '--name', cluster
     ])
