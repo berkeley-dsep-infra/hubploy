@@ -19,7 +19,7 @@ def registry_auth(deployment):
             registry_auth_gcloud(
                 deployment, **registry['gcloud']
             )
-        if provider == 'aws':
+        elif provider == 'aws':
             import boto3
             registry_auth_aws(
                 deployment, **registry['aws']
