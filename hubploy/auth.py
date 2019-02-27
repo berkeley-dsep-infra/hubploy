@@ -54,7 +54,11 @@ def registry_auth_aws(deployment, project, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
-    # This assumes that AWS_ACCESS_KEY_ID and AWS_SECRET_KEY_ID are in env vars
+    service_key_path = os.path.join(
+        'deployments', deployment, 'secrets', service_key
+    )
+    os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
+
     client = boto3.client(
         'ecr'
     )
