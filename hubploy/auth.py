@@ -58,6 +58,10 @@ def registry_auth_aws(deployment, project, service_key):
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
+
+    if not os.path.isfile(fname):
+        raise FileNotFoundError(f'The service_key file {fname} does not exist')
+
     os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
 
     client = boto3.client(
@@ -129,6 +133,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
+
+    if not os.path.isfile(fname):
+        raise FileNotFoundError(f'The service_key file {fname} does not exist')
+
     os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
 
     subprocess.check_call([
