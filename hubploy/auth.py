@@ -20,7 +20,6 @@ def registry_auth(deployment):
                 deployment, **registry['gcloud']
             )
         elif provider == 'aws':
-            import boto3
             registry_auth_aws(
                 deployment, **registry['aws']
             )
@@ -54,6 +53,8 @@ def registry_auth_aws(deployment, project, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
+    import boto3
+    
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
