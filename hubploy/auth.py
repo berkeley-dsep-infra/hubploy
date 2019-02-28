@@ -59,8 +59,8 @@ def registry_auth_aws(deployment, project, service_key):
         'deployments', deployment, 'secrets', service_key
     )
 
-    if not os.path.isfile(fname):
-        raise FileNotFoundError(f'The service_key file {fname} does not exist')
+    if not os.path.isfile(service_key_path):
+        raise FileNotFoundError(f'The service_key file {service_key_path} does not exist')
 
     os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
 
@@ -134,8 +134,8 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         'deployments', deployment, 'secrets', service_key
     )
 
-    if not os.path.isfile(fname):
-        raise FileNotFoundError(f'The service_key file {fname} does not exist')
+    if not os.path.isfile(service_key_path):
+        raise FileNotFoundError(f'The service_key file {service_key_path} does not exist')
 
     os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
 
