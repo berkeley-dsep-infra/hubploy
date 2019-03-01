@@ -4,7 +4,7 @@ Setup authentication from various providers
 import subprocess
 import os
 from hubploy.config import get_config
-
+import json
 
 def registry_auth(deployment):
     """
@@ -53,8 +53,7 @@ def registry_auth_aws(deployment, project, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
-    import boto3
-    
+
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
@@ -62,22 +61,13 @@ def registry_auth_aws(deployment, project, service_key):
     if not os.path.isfile(service_key_path):
         raise FileNotFoundError(f'The service_key file {service_key_path} does not exist')
 
+    # amazon-ecr-credential-helper needs this env var
     os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
 
-    client = boto3.client(
-        'ecr'
-    )
-    response = client.get_authorization_token()
-    auth_dict = response['authorizationData'][0]
-
-    authorizationToken = auth_dict['authorizationToken']
-    proxyEndpoint = auth_dict['proxyEndpoint']
-
-    subprocess.check_call([
-      'docker', 'login', '-u', 'AWS',
-        '-p', authorizationToken,
-        proxyEndpoint
-    ])
+    # Now using amazon-ecr-credential-helper
+    dockerConfig = os.path.join(os.path.expanduser('~'), '.docker', 'config.json')
+    with open(dockerConfig, 'w') as f:
+        json.dump(dict(credstore='ecr-login'), f)
 
 
 def cluster_auth(deployment):
