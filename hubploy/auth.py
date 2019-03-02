@@ -132,6 +132,11 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     subprocess.check_call([
         'aws', 'eks',
+        '--region', zone,
         'update-kubeconfig',
         '--name', cluster
+    ], env=aws_env)
+
+    subprocess.check_call([
+        'kubectl', 'get', 'svc',
     ], env=aws_env)
