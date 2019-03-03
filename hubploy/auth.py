@@ -68,9 +68,12 @@ def registry_auth_aws(deployment, project, service_key):
             f'The service_key file {service_key_path} does not exist')
 
     with local_env(AWS_SHARED_CREDENTIALS_FILE=service_key_path):
-        cmd = subprocess.check_output(['aws', 'ecr', 'get-login', ' --no-include-email'],
-                                      env=os.environ)
-        cmd = shlex.split(cmd.decode().strip())
+        cmd = subprocess.check_output(
+            ['aws', 'ecr', 'get-login'],
+            env=os.environ)
+        # newer versions of aws cli have a '--no-include-email' option
+        # this would mean we don't need to drop the -e none in the next line
+        cmd = shlex.split(cmd.decode().strip().replace('-e none ', ''))
         subprocess.check_call(cmd, env=os.environ)
 
 
