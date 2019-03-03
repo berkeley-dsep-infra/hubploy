@@ -1,10 +1,15 @@
 """
 Setup authentication from various providers
 """
-import subprocess
-import os
-from hubploy.config import get_config
 import json
+import os
+import shlex
+import subprocess
+
+from contextlib import contextmanager
+
+from hubploy.config import get_config
+
 
 def registry_auth(deployment):
     """
@@ -24,7 +29,8 @@ def registry_auth(deployment):
                 deployment, **registry['aws']
             )
         else:
-            raise ValueError(f'Unknown provider {provider} found in hubploy.yaml')
+            raise ValueError(
+                f'Unknown provider {provider} found in hubploy.yaml')
 
 
 def registry_auth_gcloud(deployment, project, service_key):
@@ -54,20 +60,17 @@ def registry_auth_aws(deployment, project, service_key):
     This changes *global machine state* on where docker can push to!
     """
 
-    service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
-    )
+    service_key_path = os.path.abspath(os.path.join(
+        'deployments', deployment, 'secrets', service_key))
 
     if not os.path.isfile(service_key_path):
-        raise FileNotFoundError(f'The service_key file {service_key_path} does not exist')
+        raise FileNotFoundError(
+            f'The service_key file {service_key_path} does not exist')
 
-    # amazon-ecr-credential-helper needs this env var when run
-    os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
-
-    # Now using amazon-ecr-credential-helper
-    dockerConfig = os.path.join(os.path.expanduser('~'), '.docker', 'config.json')
-    with open(dockerConfig, 'w') as f:
-        json.dump(dict(credstore='ecr-login'), f)
+    with local_env(AWS_SHARED_CREDENTIALS_FILE=service_key_path):
+        cmd = subprocess.check_output(['aws', 'ecr', 'get-login'], env=os.environ)
+        cmd = shlex.split(cmd.decode().strip().replace('-e none ', ''))
+        subprocess.check_call(cmd, env=os.environ)
 
 
 def cluster_auth(deployment):
@@ -88,7 +91,8 @@ def cluster_auth(deployment):
                 deployment, **cluster['aws']
             )
         else:
-            raise ValueError(f'Unknown provider {provider} found in hubploy.yaml')
+            raise ValueError(
+                f'Unknown provider {provider} found in hubploy.yaml')
 
 
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
@@ -125,13 +129,28 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     )
 
     if not os.path.isfile(service_key_path):
-        raise FileNotFoundError(f'The service_key file {service_key_path} does not exist')
+        raise FileNotFoundError(
+            f'The service_key file {service_key_path} does not exist')
 
-    aws_env = os.environ.copy()
-    aws_env['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(service_key_path)
+    with local_env(AWS_SHARED_CREDENTIALS_FILE=service_key_path):
+        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
+                               '--name', cluster], env=os.environ)
 
-    subprocess.check_call([
-        'aws', 'eks',
-        'update-kubeconfig',
-        '--name', cluster
-    ], env=aws_env)
+
+@contextmanager
+def local_env(**kwargs):
+    """
+    Set environment variables as a context manager
+
+    Original values are restored outside of the context manager
+    """
+    original_env = {key: os.getenv(key) for key in kwargs}
+    try:
+        os.environ.update(kwargs)
+        yield
+    finally:
+        for key, value in original_env.items():
+            if key is not None:
+                os.environ[key] = value
+            else:
+                del os.environ[key]
