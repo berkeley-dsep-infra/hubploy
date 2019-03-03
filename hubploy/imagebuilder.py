@@ -10,6 +10,21 @@ from hubploy import gitutils
 from hubploy.config import get_config
 from repo2docker.app import Repo2Docker
 
+def image_exists_in_registry(client, image_spec):
+    """
+    Return true if image exists in registry
+    """
+    try:
+        image_manifest = client.images.get_registry_data(image_spec)
+        return image_manifest is not None
+    except docker.errors.ImageNotFound:
+        return False
+    except docker.errors.APIError as e:
+        # This message seems to vary across registries?
+        if e.explanation.startswith('manifest unknown: '):
+            return False
+        else:
+            raise
 
 def make_imagespec(path, image_name):
     tag = gitutils.last_modified_commit(path)
@@ -65,24 +80,29 @@ def pull_images_for_cache(client, path, image_name, commit_range):
 
     return cache_from
 
-def build_if_needed(client, path, image_name, commit_range, push=False):
+def build_if_needed(client, path, image_name, commit_range, check_registry, push=False):
     image_spec = make_imagespec(path, image_name)
 
-    if (not commit_range) or gitutils.path_touched(path, commit_range=commit_range):
+    if check_registry:
+        is_built = image_exists_in_registry(client, image_spec)
+    else:
+        is_built = commit_range and gitutils.path_touched(path, commit_range=commit_range)
+
+    if is_built:
+        print(f'Image {image_spec}: already up to date')
+        return False
+    else:
         print(f'Image {image_spec} needs to be built...')
 
         cache_from = pull_images_for_cache(client, path, image_name, commit_range)
         print(f'Starting to build {image_spec}')
         build_image(client, path, image_spec, cache_from, push)
         return True
-    else:
-        print(f'Image {image_spec}: already up to date')
-        return False
 
-def build_deployment(client, deployment, commit_range, push=False):
+def build_deployment(client, deployment, commit_range, check_registry, push=False):
     config = get_config(deployment)
 
     image_path = os.path.abspath(os.path.join('deployments', deployment, 'image'))
     image_name = config['images']['image_name']
 
-    build_if_needed(client, image_path, image_name, commit_range, push)
+    build_if_needed(client, image_path, image_name, commit_range, check_registry, push)

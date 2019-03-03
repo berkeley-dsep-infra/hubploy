@@ -12,9 +12,17 @@ def main():
         'deployment',
         help='Path to directory with dockerfile'
     )
-    build_parser.add_argument(
+
+    trigger_change_group = build_parser.add_mutually_exclusive_group()
+    trigger_change_group.add_argument(
         '--commit-range',
-        help='Trigger image rebuilds only if path has changed in this commit range'
+        help='Trigger image rebuilds only if files in image directory have changed in this git commit range'
+    )
+    # FIXME: Needs a better name?
+    trigger_change_group.add_argument(
+        '--check-registry',
+        action='store_true',
+        help="Trigger image rebuild if image with expected name and tag is not in upstream registry."
     )
     build_parser.add_argument(
         '--push',
@@ -48,10 +56,10 @@ def main():
     args = argparser.parse_args()
 
     if args.command == 'build':
-        client = docker.from_env()
-        if args.push:
+        if args.push or args.check_registry:
             auth.registry_auth(args.deployment)
-        imagebuilder.build_deployment(client, args.deployment, args.commit_range, args.push)
+        client = docker.from_env()
+        imagebuilder.build_deployment(client, args.deployment, args.commit_range, args.check_registry, args.push)
     elif args.command == 'deploy':
         auth.cluster_auth(args.deployment)
         helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version)
