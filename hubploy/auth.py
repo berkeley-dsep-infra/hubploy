@@ -154,7 +154,7 @@ def local_env(**kwargs):
         yield
     finally:
         for key, value in original_env.items():
-            if key is not None:
-                os.environ[key] = value
-            else:
+            if value is None:
                 del os.environ[key]
+            else:
+                os.environ[key] = value
