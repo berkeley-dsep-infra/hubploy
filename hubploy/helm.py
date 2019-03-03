@@ -23,10 +23,6 @@ import os
 import argparse
 import shutil
 
-aws_env = os.path.join('deployments', 'nasa', 'secrets', 'aws-config.txt')
-os.environ['AWS_SHARED_CREDENTIALS_FILE'] = os.path.abspath(aws_env)
-
-
 def helm_upgrade(
     name,
     namespace,
