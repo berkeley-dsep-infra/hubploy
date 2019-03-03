@@ -84,20 +84,20 @@ def build_if_needed(client, path, image_name, commit_range, check_registry, push
     image_spec = make_imagespec(path, image_name)
 
     if check_registry:
-        is_built = image_exists_in_registry(client, image_spec)
+        needs_building = not image_exists_in_registry(client, image_spec)
     else:
-        is_built = commit_range and gitutils.path_touched(path, commit_range=commit_range)
+        needs_building = commit_range and gitutils.path_touched(path, commit_range=commit_range)
 
-    if is_built:
-        print(f'Image {image_spec}: already up to date')
-        return False
-    else:
+    if needs_building:
         print(f'Image {image_spec} needs to be built...')
 
         cache_from = pull_images_for_cache(client, path, image_name, commit_range)
         print(f'Starting to build {image_spec}')
         build_image(client, path, image_spec, cache_from, push)
         return True
+    else:
+        print(f'Image {image_spec}: already up to date')
+        return False
 
 def build_deployment(client, deployment, commit_range, check_registry, push=False):
     config = get_config(deployment)
