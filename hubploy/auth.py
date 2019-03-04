@@ -1,8 +1,13 @@
 """
 Setup authentication from various providers
 """
-import subprocess
+import json
 import os
+import shlex
+import subprocess
+
+from contextlib import contextmanager
+
 from hubploy.config import get_config
 
 
@@ -19,8 +24,13 @@ def registry_auth(deployment):
             registry_auth_gcloud(
                 deployment, **registry['gcloud']
             )
+        elif provider == 'aws':
+            registry_auth_aws(
+                deployment, **registry['aws']
+            )
         else:
-            raise ValueError(f'Unknown provider {provider} found in hubploy.yaml')
+            raise ValueError(
+                f'Unknown provider {provider} found in hubploy.yaml')
 
 
 def registry_auth_gcloud(deployment, project, service_key):
@@ -43,6 +53,23 @@ def registry_auth_gcloud(deployment, project, service_key):
     ])
 
 
+def registry_auth_aws(deployment, project, zone, service_key):
+    """
+    Setup AWS authentication to ECR container registry
+
+    This changes *global machine state* on where docker can push to!
+    """
+    registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+    # amazon-ecr-credential-helper installed in .circleci/config.yaml
+    # this adds necessary line to authenticate docker with ecr
+    dockerConfig = os.path.join(os.path.expanduser('~'), '.docker', 'config.json')
+    with open(dockerConfig, 'r') as f:
+        config = json.load(f)
+        config['credHelpers'][registry] = 'ecr-login'
+    with open(dockerConfig, 'w') as f:
+        json.dump(config, f)
+
+
 def cluster_auth(deployment):
     """
     Do appropriate cluster authentication for given deployment
@@ -56,8 +83,13 @@ def cluster_auth(deployment):
             cluster_auth_gcloud(
                 deployment, **cluster['gcloud']
             )
+        elif provider == 'aws':
+            cluster_auth_aws(
+                deployment, **cluster['aws']
+            )
         else:
-            raise ValueError(f'Unknown provider {provider} found in hubploy.yaml')
+            raise ValueError(
+                f'Unknown provider {provider} found in hubploy.yaml')
 
 
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
@@ -82,3 +114,40 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
+
+def cluster_auth_aws(deployment, project, cluster, zone, service_key):
+    """
+    Setup AWS authentication with service_key
+
+    This changes *global machine state* on what current kubernetes cluster is!
+    """
+    service_key_path = os.path.join(
+        'deployments', deployment, 'secrets', service_key
+    )
+
+    if not os.path.isfile(service_key_path):
+        raise FileNotFoundError(
+            f'The service_key file {service_key_path} does not exist')
+
+    with local_env(AWS_CONFIG_FILE=service_key_path):
+        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
+                               '--name', cluster], env=os.environ)
+
+
+@contextmanager
+def local_env(**kwargs):
+    """
+    Set environment variables as a context manager
+
+    Original values are restored outside of the context manager
+    """
+    original_env = {key: os.getenv(key) for key in kwargs}
+    try:
+        os.environ.update(kwargs)
+        yield
+    finally:
+        for key, value in original_env.items():
+            if value is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = value
