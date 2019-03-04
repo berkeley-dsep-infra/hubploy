@@ -53,7 +53,7 @@ def registry_auth_gcloud(deployment, project, service_key):
     ])
 
 
-def registry_auth_aws(deployment, project, zone):
+def registry_auth_aws(deployment, project, zone, service_key):
     """
     Setup AWS authentication to ECR container registry
 
@@ -129,7 +129,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-    with local_env(AWS_SHARED_CREDENTIALS_FILE=service_key_path):
+    with local_env(AWS_CONFIG_FILE=service_key_path):
         subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                                '--name', cluster], env=os.environ)
 
