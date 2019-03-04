@@ -53,28 +53,21 @@ def registry_auth_gcloud(deployment, project, service_key):
     ])
 
 
-def registry_auth_aws(deployment, project, service_key):
+def registry_auth_aws(deployment, project, zone):
     """
-    Setup AWS authentication with a service_key
+    Setup AWS authentication to ECR container registry
 
     This changes *global machine state* on where docker can push to!
     """
-
-    service_key_path = os.path.abspath(os.path.join(
-        'deployments', deployment, 'secrets', service_key))
-
-    if not os.path.isfile(service_key_path):
-        raise FileNotFoundError(
-            f'The service_key file {service_key_path} does not exist')
-
-    with local_env(AWS_SHARED_CREDENTIALS_FILE=service_key_path):
-        cmd = subprocess.check_output(
-            ['aws', 'ecr', 'get-login'],
-            env=os.environ)
-        # newer versions of aws cli have a '--no-include-email' option
-        # this would mean we don't need to drop the -e none in the next line
-        cmd = shlex.split(cmd.decode().strip().replace('-e none ', ''))
-        subprocess.check_call(cmd, env=os.environ)
+    registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+    # amazon-ecr-credential-helper installed in .circleci/config.yaml
+    # this adds necessary line to authenticate docker with ecr
+    dockerConfig = os.path.join(os.path.expanduser('~'), '.docker', 'config.json')
+    with open(dockerConfig, 'r') as f:
+        config = json.load(f)
+        config['credHelpers'][registry] = 'ecr-login'
+    with open(dockerConfig, 'w') as f:
+        json.dump(config, f)
 
 
 def cluster_auth(deployment):
