@@ -39,6 +39,7 @@ def build_image(client, path, image_spec, cache_from=None, push=False):
     r2d.output_image_spec = image_spec
     r2d.user_id = 1000
     r2d.user_name = 'jovyan'
+    r2d.target_repo_dir = '/srv/repo'
     if cache_from:
         r2d.cache_from = cache_from
 
