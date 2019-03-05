@@ -66,10 +66,10 @@ def registry_auth_aws(deployment, project, zone, service_key):
             f'The service_key file {service_key_path} does not exist')
 
     # move credentials to standard location
-    credDir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(credDir):
-        os.mkdir(credDir)
-    shutil.copyfile(service_key_path, os.path.join(credDir, 'credentials'))
+    cred_dir = os.path.expanduser('~/.aws')
+    if not os.path.isdir(cred_dir):
+        os.mkdir(cred_dir)
+    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
     registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
     # amazon-ecr-credential-helper installed in .circleci/config.yaml
