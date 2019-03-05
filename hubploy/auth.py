@@ -3,10 +3,8 @@ Setup authentication from various providers
 """
 import json
 import os
-import shlex
 import subprocess
-
-from contextlib import contextmanager
+import shutil
 
 from hubploy.config import get_config
 
@@ -59,6 +57,20 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
+    service_key_path = os.path.join(
+        'deployments', deployment, 'secrets', service_key
+    )
+
+    if not os.path.isfile(service_key_path):
+        raise FileNotFoundError(
+            f'The service_key file {service_key_path} does not exist')
+
+    # move credentials to standard location
+    cred_dir = os.path.expanduser('~/.aws')
+    if not os.path.isdir(cred_dir):
+        os.mkdir(cred_dir)
+    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
+
     registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
     # amazon-ecr-credential-helper installed in .circleci/config.yaml
     # this adds necessary line to authenticate docker with ecr
@@ -121,33 +133,6 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
-    )
 
-    if not os.path.isfile(service_key_path):
-        raise FileNotFoundError(
-            f'The service_key file {service_key_path} does not exist')
-
-    with local_env(AWS_CONFIG_FILE=service_key_path):
-        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                               '--name', cluster], env=os.environ)
-
-
-@contextmanager
-def local_env(**kwargs):
-    """
-    Set environment variables as a context manager
-
-    Original values are restored outside of the context manager
-    """
-    original_env = {key: os.getenv(key) for key in kwargs}
-    try:
-        os.environ.update(kwargs)
-        yield
-    finally:
-        for key, value in original_env.items():
-            if value is None:
-                del os.environ[key]
-            else:
-                os.environ[key] = value
+    subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
+                           '--name', cluster, '--region', zone])
