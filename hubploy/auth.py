@@ -8,6 +8,9 @@ import shutil
 
 from hubploy.config import get_config
 
+from ruamel.yaml import YAML
+yaml = YAML(typ='rt')
+
 
 def registry_auth(deployment):
     """
@@ -99,6 +102,10 @@ def cluster_auth(deployment):
             cluster_auth_aws(
                 deployment, **cluster['aws']
             )
+        elif provider == 'azure':
+            cluster_auth_azure(
+                deployment, **cluster['azure']
+            )
         else:
             raise ValueError(
                 f'Unknown provider {provider} found in hubploy.yaml')
@@ -136,3 +143,35 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                            '--name', cluster, '--region', zone])
+
+
+def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
+    """
+
+    Azure authentication for AKS
+
+    This changes *global machine state* on what the current kubernetes cluster is!
+    """
+
+    # parse Azure auth file
+    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    with open(auth_file_path) as f:
+        auth = yaml.load(f)
+    user = auth['user']
+    tenant = auth['tenant']
+    client_secret = auth['client_secret']
+
+    # log in
+    subprocess.check_call([
+        'az', 'login', '--service-principal',
+        '--user', user,
+        '--tenant', tenant,
+        '--password', client_secret
+    ])
+
+    # get cluster credentials
+    subprocess.check_call([
+        'az', 'aks', 'get-credentials',
+        '--name', cluster,
+        '--resource-group', resource_group
+    ])
