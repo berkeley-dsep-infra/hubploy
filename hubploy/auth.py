@@ -29,6 +29,10 @@ def registry_auth(deployment):
             registry_auth_aws(
                 deployment, **registry['aws']
             )
+        elif provider == 'azure':
+            registry_auth_azure(
+                deployment, **registry['azure']
+            )
         else:
             raise ValueError(
                 f'Unknown provider {provider} found in hubploy.yaml')
@@ -83,6 +87,36 @@ def registry_auth_aws(deployment, project, zone, service_key):
         config['credHelpers'][registry] = 'ecr-login'
     with open(dockerConfig, 'w') as f:
         json.dump(config, f)
+
+
+def registry_auth_azure(deployment, resource_group, registry, auth_file):
+    """
+    Azure authentication for ACR container registry
+
+    This changes *global machine state* on where docker can push to!
+    """
+
+    # parse Azure auth file
+    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    with open(auth_file_path) as f:
+        auth = yaml.load(f)
+    user = auth['user']
+    tenant = auth['tenant']
+    client_secret = auth['client_secret']
+
+    # log in
+    subprocess.check_call([
+        'az', 'login', '--service-principal',
+        '--user', user,
+        '--tenant', tenant,
+        '--password', client_secret
+    ])
+
+    # log in to ACR
+    subprocess.check_call([
+        'az', 'acr', 'login',
+        '--name', registry
+    ])
 
 
 def cluster_auth(deployment):
