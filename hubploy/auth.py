@@ -91,9 +91,23 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
-    Azure authentication for ACR container registry
+    Azure authentication for ACR
 
-    This changes *global machine state* on where docker can push to!
+    In hubploy.yaml include:
+
+    registry:
+      provider: azure
+      azure:
+        resource_group: resource_group_name
+        registry: registry_name
+        auth_file: azure_auth_file.yaml
+
+    The azure_auth_file.yaml in the secrets directory should include:
+
+    user: "http://service_principal_name"
+    tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
     """
 
     # parse Azure auth file
@@ -184,7 +198,21 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
 
     Azure authentication for AKS
 
-    This changes *global machine state* on what the current kubernetes cluster is!
+    In hubploy.yaml include:
+
+    cluster:
+      provider: azure
+      azure:
+        resource_group: resource_group_name
+        cluster: cluster_name
+        auth_file: azure_auth_file.yaml
+
+    The azure_auth_file.yaml in the secrets directory should include:
+
+    user: "http://service_principal_name"
+    tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
     """
 
     # parse Azure auth file
@@ -209,3 +237,7 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--name', cluster,
         '--resource-group', resource_group
     ])
+
+
+
+
