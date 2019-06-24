@@ -8,6 +8,9 @@ import shutil
 
 from hubploy.config import get_config
 
+from ruamel.yaml import YAML
+yaml = YAML(typ='rt')
+
 
 def registry_auth(deployment):
     """
@@ -25,6 +28,10 @@ def registry_auth(deployment):
         elif provider == 'aws':
             registry_auth_aws(
                 deployment, **registry['aws']
+            )
+        elif provider == 'azure':
+            registry_auth_azure(
+                deployment, **registry['azure']
             )
         else:
             raise ValueError(
@@ -82,6 +89,50 @@ def registry_auth_aws(deployment, project, zone, service_key):
         json.dump(config, f)
 
 
+def registry_auth_azure(deployment, resource_group, registry, auth_file):
+    """
+    Azure authentication for ACR
+
+    In hubploy.yaml include:
+
+    registry:
+      provider: azure
+      azure:
+        resource_group: resource_group_name
+        registry: registry_name
+        auth_file: azure_auth_file.yaml
+
+    The azure_auth_file.yaml in the secrets directory should include:
+
+    user: "http://service_principal_name"
+    tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+    """
+
+    # parse Azure auth file
+    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    with open(auth_file_path) as f:
+        auth = yaml.load(f)
+    user = auth['user']
+    tenant = auth['tenant']
+    client_secret = auth['client_secret']
+
+    # log in
+    subprocess.check_call([
+        'az', 'login', '--service-principal',
+        '--user', user,
+        '--tenant', tenant,
+        '--password', client_secret
+    ])
+
+    # log in to ACR
+    subprocess.check_call([
+        'az', 'acr', 'login',
+        '--name', registry
+    ])
+
+
 def cluster_auth(deployment):
     """
     Do appropriate cluster authentication for given deployment
@@ -98,6 +149,10 @@ def cluster_auth(deployment):
         elif provider == 'aws':
             cluster_auth_aws(
                 deployment, **cluster['aws']
+            )
+        elif provider == 'azure':
+            cluster_auth_azure(
+                deployment, **cluster['azure']
             )
         else:
             raise ValueError(
@@ -136,3 +191,53 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                            '--name', cluster, '--region', zone])
+
+
+def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
+    """
+
+    Azure authentication for AKS
+
+    In hubploy.yaml include:
+
+    cluster:
+      provider: azure
+      azure:
+        resource_group: resource_group_name
+        cluster: cluster_name
+        auth_file: azure_auth_file.yaml
+
+    The azure_auth_file.yaml in the secrets directory should include:
+
+    user: "http://service_principal_name"
+    tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+    """
+
+    # parse Azure auth file
+    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    with open(auth_file_path) as f:
+        auth = yaml.load(f)
+    user = auth['user']
+    tenant = auth['tenant']
+    client_secret = auth['client_secret']
+
+    # log in
+    subprocess.check_call([
+        'az', 'login', '--service-principal',
+        '--user', user,
+        '--tenant', tenant,
+        '--password', client_secret
+    ])
+
+    # get cluster credentials
+    subprocess.check_call([
+        'az', 'aks', 'get-credentials',
+        '--name', cluster,
+        '--resource-group', resource_group
+    ])
+
+
+
+
