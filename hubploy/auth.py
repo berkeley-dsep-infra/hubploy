@@ -104,8 +104,8 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
 
     The azure_auth_file.yaml in the secrets directory should include:
 
-    user: "http://service_principal_name"
-    tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    client_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    tenant_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
     """
@@ -114,16 +114,13 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
     auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
     with open(auth_file_path) as f:
         auth = yaml.load(f)
-    user = auth['user']
-    tenant = auth['tenant']
-    client_secret = auth['client_secret']
 
     # log in
     subprocess.check_call([
         'az', 'login', '--service-principal',
-        '--user', user,
-        '--tenant', tenant,
-        '--password', client_secret
+        '--user', auth['client_id'],
+        '--tenant', auth['tenant_id'],
+        '--password', auth['client_secret']
     ])
 
     # log in to ACR
@@ -209,8 +206,8 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
 
     The azure_auth_file.yaml in the secrets directory should include:
 
-    user: "http://service_principal_name"
-    tenant: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    client_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    tenant_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
     client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
     """
@@ -219,16 +216,13 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
     with open(auth_file_path) as f:
         auth = yaml.load(f)
-    user = auth['user']
-    tenant = auth['tenant']
-    client_secret = auth['client_secret']
 
     # log in
     subprocess.check_call([
         'az', 'login', '--service-principal',
-        '--user', user,
-        '--tenant', tenant,
-        '--password', client_secret
+        '--user', auth['client_id'],
+        '--tenant', auth['tenant_id'],
+        '--password', auth['client_secret']
     ])
 
     # get cluster credentials
