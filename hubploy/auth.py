@@ -102,12 +102,10 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         registry: registry_name
         auth_file: azure_auth_file.yaml
 
-    The azure_auth_file.yaml in the secrets directory should include:
-
-    client_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    tenant_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
+    The azure_service_principal.json file should have the following
+    keys: appId, tenant, password. This is the format produced
+    by the az command when creating a service principal.
+    See https://docs.microsoft.com/en-us/azure/aks/kubernetes-service-principal
     """
 
     # parse Azure auth file
@@ -118,9 +116,9 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
     # log in
     subprocess.check_call([
         'az', 'login', '--service-principal',
-        '--user', auth['client_id'],
-        '--tenant', auth['tenant_id'],
-        '--password', auth['client_secret']
+        '--user', auth['appId'],
+        '--tenant', auth['tenant'],
+        '--password', auth['password']
     ])
 
     # log in to ACR
@@ -204,12 +202,9 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         cluster: cluster_name
         auth_file: azure_auth_file.yaml
 
-    The azure_auth_file.yaml in the secrets directory should include:
-
-    client_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    tenant_id: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-    client_secret: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-
+    The azure_service_principal.json file should have the following
+    keys: appId, tenant, password. This is the format produced
+    by the az command when creating a service principal.
     """
 
     # parse Azure auth file
@@ -220,9 +215,9 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     # log in
     subprocess.check_call([
         'az', 'login', '--service-principal',
-        '--user', auth['client_id'],
-        '--tenant', auth['tenant_id'],
-        '--password', auth['client_secret']
+        '--user', auth['appId'],
+        '--tenant', auth['tenant'],
+        '--password', auth['password']
     ])
 
     # get cluster credentials
