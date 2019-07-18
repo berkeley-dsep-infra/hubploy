@@ -8,6 +8,7 @@ import shutil
 
 from hubploy.config import get_config
 
+import docker
 from ruamel.yaml import YAML
 yaml = YAML(typ='rt')
 
@@ -32,6 +33,10 @@ def registry_auth(deployment):
         elif provider == 'azure':
             registry_auth_azure(
                 deployment, **registry['azure']
+            )
+        elif provider == 'dockerhub':
+            registry_auth_dockerhub(
+                deployment, **registry['dockerhub']
             )
         else:
             raise ValueError(
@@ -127,6 +132,17 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         '--name', registry
     ])
 
+def registry_auth_dockerhub(deployment, auth_file):
+    # parse auth file
+    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    with open(auth_file_path) as f:
+        auth = yaml.load(f)
+
+    registry = auth.get('registry', 'https://index.docker.io/v1/')
+
+    client = docker.DockerClient()
+    client.login(username=auth['username'], password=auth['password'],
+        registry=registry)
 
 def cluster_auth(deployment):
     """
