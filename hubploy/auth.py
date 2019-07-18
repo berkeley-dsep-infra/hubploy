@@ -34,9 +34,9 @@ def registry_auth(deployment):
             registry_auth_azure(
                 deployment, **registry['azure']
             )
-        elif provider == 'dockerhub':
-            registry_auth_dockerhub(
-                deployment, **registry['dockerhub']
+        elif provider == 'docker':
+            registry_auth_docker(
+                deployment, **registry['docker']
             )
         else:
             raise ValueError(
@@ -132,7 +132,7 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         '--name', registry
     ])
 
-def registry_auth_dockerhub(deployment, auth_file):
+def registry_auth_docker(deployment, auth_file):
     # parse auth file
     auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
     with open(auth_file_path) as f:
