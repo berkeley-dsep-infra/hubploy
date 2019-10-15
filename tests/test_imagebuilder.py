@@ -7,7 +7,7 @@ import pytest
 import subprocess
 import docker
 import time
-
+import docker.errors
 
 from hubploy import imagebuilder, gitutils
 
@@ -113,5 +113,5 @@ def test_build_fail(git_repo):
     with open(os.path.join(git_repo, 'Dockerfile'), 'w') as f:
         f.write('FROM busybox\n')
         f.write('RUN non-existent')
-    with pytest.raises(SystemExit):
+    with pytest.raises(docker.errors.BuildError):
         imagebuilder.build_image(client, git_repo, 'test:latest')
