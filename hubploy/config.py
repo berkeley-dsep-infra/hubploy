@@ -17,14 +17,12 @@ class LocalImage:
         name: Fully qualified name of image
         path: Absolute path to local directory with image contents
         helm_substitution_path: Dot separated path in a helm file that should be populated with this image spec
+
+        Expects cwd to be inside the git repo we are operating in
         """
         self.name = name
 
         self.tag = gitutils.last_modified_commit(path)
-        if not self.tag:
-            # Suport uncommitted images locally
-            # FIXME: Emit a warning here?
-            self.tag = 'latest'
         self.path = path
         self.helm_substitution_path = helm_substitution_path
         self.image_spec = f'{self.name}:{self.tag}'
@@ -149,7 +147,7 @@ def get_config(deployment):
 
     if not os.path.exists(config_path):
         return {}
-    
+
     with open(config_path) as f:
         config = yaml.load(f)
 
@@ -175,6 +173,5 @@ def get_config(deployment):
         image['path'] = os.path.join(deployment_path, image['path'])
 
     config['images']['images'] = [LocalImage(**i) for i in images]
-    
+
     return config
-    
