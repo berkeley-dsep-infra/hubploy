@@ -162,8 +162,10 @@ def get_config(deployment):
             images = [{
                 'name': images_config['image_name'],
                 'path': 'image',
-                'helm_substitution_path': images_config['image_config_path']
             }]
+            if 'image_config_path' in images_config:
+                images[0]['helm_substitution_path'] = images_config['image_config_path']
+
         else:
             # Multiple images are being built
             images = images_config['images']
