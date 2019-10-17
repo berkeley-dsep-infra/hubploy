@@ -1,5 +1,6 @@
 import argparse
-from hubploy import imagebuilder, helm, auth
+import hubploy
+from hubploy import helm, auth
 import docker
 
 
@@ -55,11 +56,20 @@ def main():
 
     args = argparser.parse_args()
 
+    config = hubploy.config.get_config(args.deployment)
+
     if args.command == 'build':
+
         if args.push or args.check_registry:
             auth.registry_auth(args.deployment)
-        client = docker.from_env()
-        imagebuilder.build_deployment(client, args.deployment, args.commit_range, args.check_registry, args.push)
+
+        for image in config.get('images', {}).get('images', {}):
+            if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
+                image.fetch_parent_image()
+                image.build()
+                if args.push:
+                    image.push()
+
     elif args.command == 'deploy':
         auth.cluster_auth(args.deployment)
         helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version)
