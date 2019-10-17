@@ -37,7 +37,8 @@ jobs:
           command: |
             source venv/bin/activate
             mkdir -p test-reports/unit
-            py.test --junitxml=test-reports/unit/results.xml tests/
+            py.test --cov=hubploy --junitxml=test-reports/unit/results.xml tests/
+            codecov
 
       - store_test_results:
           path: test-reports
