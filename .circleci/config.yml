@@ -38,6 +38,11 @@ jobs:
             source venv/bin/activate
             mkdir -p test-reports/unit
             py.test --cov=hubploy --junitxml=test-reports/unit/results.xml tests/
+
+      - run:
+          name: upload coverage info to codecov
+          command: |
+            source venv/bin/activate
             codecov
 
       - store_test_results:
