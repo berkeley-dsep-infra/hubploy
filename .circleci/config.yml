@@ -1,8 +1,9 @@
 version: 2
 jobs:
   build:
-    machine: true
-      
+    machine:
+      image: ubuntu-1604:201903-01
+
     working_directory: ~/repo
 
     steps:
@@ -18,9 +19,6 @@ jobs:
       - run:
           name: setup dependencies
           command: |
-            pyenv install --skip-existing 3.6.3
-            pyenv global 3.6.3
-            pyenv rehash
             python3 -m venv venv
             source venv/bin/activate
             pip install -r dev-requirements.txt
@@ -31,9 +29,8 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-            - /opt/circleci/.pyenv
           key: v1-dependencies-3.6.3-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
-        
+
       - run:
           name: run tests
           command: |
