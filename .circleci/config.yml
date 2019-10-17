@@ -12,13 +12,14 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-3.5.2-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
+          - v1-dependencies-3.7.0-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-3.5.2-
+          - v1-dependencies-3.7.0-
 
       - run:
           name: setup dependencies
           command: |
+            pyenv global 3.7.0
             python3 -m venv venv
             source venv/bin/activate
             pip install -r dev-requirements.txt
@@ -29,7 +30,7 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-          key: v1-dependencies-3.5.2-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
+          key: v1-dependencies-3.7.0-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
 
       - run:
           name: run tests
