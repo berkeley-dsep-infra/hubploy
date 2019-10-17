@@ -103,7 +103,21 @@ def build_if_needed(client, path, image_name, commit_range, check_registry, push
 def build_deployment(client, deployment, commit_range, check_registry, push=False):
     config = get_config(deployment)
 
-    image_path = os.path.abspath(os.path.join('deployments', deployment, 'image'))
-    image_name = config['images']['image_name']
+    images_config = config['images']
 
-    build_if_needed(client, image_path, image_name, commit_range, check_registry, push)
+    if 'image_name' in images_config:
+        # Only one image is being built
+        images = [{
+            'image_name': images_config['image_name'],
+            'image_path': 'image'
+        }]
+    else:
+        # Multiple images are being built
+        images = images_config['images']
+
+    for image in images:
+        build_if_needed(client,
+            os.path.abspath(os.path.join('deployments', deployment, image['image_path'])),
+            image['image_name'],
+            commit_range, check_registry, push
+        )
