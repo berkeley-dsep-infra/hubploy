@@ -3,7 +3,7 @@ Utils for dealing with hubploy config
 """
 import os
 from ruamel.yaml import YAML
-yaml = YAML(typ='rt')
+yaml = YAML(typ='safe')
 
 def get_config(deployment):
     """
