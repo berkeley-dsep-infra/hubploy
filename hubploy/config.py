@@ -10,12 +10,13 @@ from . import gitutils
 yaml = YAML(typ='safe')
 
 class LocalImage:
-    def __init__(self, name, path):
+    def __init__(self, name, path, helm_substitution_path='jupyterhub.singleuser.image'):
         """
         Create an Image from a local path
 
         name: Fully qualified name of image
         path: Absolute path to local directory with image contents
+        helm_substitution_path: Dot separated path in a helm file that should be populated with this image spec
         """
         self.name = name
 
@@ -25,6 +26,7 @@ class LocalImage:
             # FIXME: Emit a warning here?
             self.tag = 'latest'
         self.path = path
+        self.helm_substitution_path = helm_substitution_path
         self.image_spec = f'{self.name}:{self.tag}'
 
         # Make r2d object here so we can use it to build & push
@@ -156,9 +158,11 @@ def get_config(deployment):
 
         if 'image_name' in images_config:
             # Only one image is being built
+            # FIXME: Deprecate after moving other hubploy users to list format
             images = [{
                 'name': images_config['image_name'],
-                'path': 'image'
+                'path': 'image',
+                'helm_substitution_path': images_config['image_config_path']
             }]
         else:
             # Multiple images are being built
