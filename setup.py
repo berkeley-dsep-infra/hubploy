@@ -7,7 +7,6 @@ setuptools.setup(
     author="Yuvi Panda",
     packages=setuptools.find_packages(),
     install_requires=[
-        'requests',
         'docker',
         'jupyter-repo2docker>=0.8',
     ],
