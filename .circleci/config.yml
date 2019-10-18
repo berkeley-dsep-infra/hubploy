@@ -1,8 +1,9 @@
 version: 2
 jobs:
   build:
-    machine: true
-      
+    machine:
+      image: ubuntu-1604:201903-01
+
     working_directory: ~/repo
 
     steps:
@@ -11,16 +12,14 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-          - v1-dependencies-3.6.3-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
+          - v1-dependencies-3.7.0-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-3.6.3-
+          - v1-dependencies-3.7.0-
 
       - run:
           name: setup dependencies
           command: |
-            pyenv install --skip-existing 3.6.3
-            pyenv global 3.6.3
-            pyenv rehash
+            pyenv global 3.7.0
             python3 -m venv venv
             source venv/bin/activate
             pip install -r dev-requirements.txt
@@ -31,15 +30,20 @@ jobs:
       - save_cache:
           paths:
             - ./venv
-            - /opt/circleci/.pyenv
-          key: v1-dependencies-3.6.3-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
-        
+          key: v1-dependencies-3.7.0-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
+
       - run:
           name: run tests
           command: |
             source venv/bin/activate
             mkdir -p test-reports/unit
-            py.test --junitxml=test-reports/unit/results.xml tests/
+            py.test --cov=hubploy --junitxml=test-reports/unit/results.xml tests/
+
+      - run:
+          name: upload coverage info to codecov
+          command: |
+            source venv/bin/activate
+            codecov
 
       - store_test_results:
           path: test-reports

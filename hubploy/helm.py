@@ -15,13 +15,11 @@ deployments/
       - staging.yaml
       - prod.yaml
 """
-import argparse
 import itertools
 import os
 import shutil
 import subprocess
 
-from hubploy import gitutils
 from hubploy.config import get_config
 
 
@@ -101,23 +99,13 @@ def deploy(
         os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
     ] if os.path.exists(f)]
 
-    image_path = os.path.join('deployments', deployment, 'image')
-    if os.path.exists(image_path):
-        image_tag = gitutils.last_modified_commit(
-            os.path.join('deployments', deployment, 'image')
-        )
-
+    for image in config['images']['images']:
         # We can support other charts that wrap z2jh by allowing various
         # config paths where we set image tags and names.
         # We default to one sublevel, but we can do multiple levels.
         # With the PANGEO chart, we this could be set to `pangeo.jupyterhub.singleuser.image`
-        image_config_path = config.get('images', {}).get('image_config_path', 'jupyterhub.singleuser.image')
-        helm_config_overrides.append(f'{image_config_path}.tag={image_tag}')
-
-        if 'images' in config:
-            image_name = config['images'].get('image_name')
-            if image_name:
-                helm_config_overrides.append(f'{image_config_path}.name={image_name}')
+        helm_config_overrides.append(f'{image.helm_substitution_path}.tag={image.tag}')
+        helm_config_overrides.append(f'{image.helm_substitution_path}.name={image.name}')
 
     helm_upgrade(
         name,

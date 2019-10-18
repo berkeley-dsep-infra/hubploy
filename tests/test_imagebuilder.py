@@ -1,15 +1,15 @@
 import socket
 import tempfile
+import contextlib
 import pathlib
 import os
-import secrets
 import pytest
 import subprocess
 import docker
 import time
+import docker.errors
 
-
-from hubploy import imagebuilder, gitutils
+from hubploy import config, gitutils
 
 
 @pytest.fixture
@@ -19,7 +19,13 @@ def git_repo():
     """
     with tempfile.TemporaryDirectory() as d:
         subprocess.check_output(['git', 'init'], cwd=d)
-        yield d
+        yield pathlib.Path(d)
+
+
+def git(repo_dir, *cmd):
+    with cwd(repo_dir):
+        subprocess.check_call(['git'] + list(cmd))
+
 
 @pytest.fixture
 def open_port():
@@ -32,7 +38,6 @@ def open_port():
         return s.getsockname()[1]
     finally:
         s.close()
-
 
 
 @pytest.fixture
@@ -57,61 +62,109 @@ def local_registry(open_port):
         container.stop()
         container.remove()
 
-def commit_nonce(git_repo):
-    """
-    Commit a nonce file in given git repo
 
-    Return nonce value used
-    """
-    nonce = secrets.token_hex(32)
-    with open(os.path.join(git_repo, 'image/nonce'), 'w') as f:
-        f.write(nonce)
-
-    subprocess.check_output(['git', 'add', '.'], cwd=git_repo)
-    subprocess.check_output(['git', 'commit', '-m', 'test-commit'], cwd=git_repo)
-
-    return nonce
-
-def test_imagebuild(git_repo, local_registry):
-    """
-    End to end test of image building.
-    """
-    client = docker.from_env()
-    image_name = f'{local_registry}/hubdeploy-test/' + secrets.token_hex(8)
-    image_dir = os.path.join(git_repo, 'image')
-
-    # Set up image directory & Dockerfile
-    os.makedirs(image_dir)
-    with open(os.path.join(image_dir, 'Dockerfile'), 'w') as f:
-        f.write('FROM busybox\n')
-        f.write('ADD nonce /')
-
-    nonce = commit_nonce(git_repo)
-
-    cur_dir = os.getcwd()
+@contextlib.contextmanager
+def cwd(new_dir):
+    curdir = os.getcwd()
     try:
-        os.chdir(git_repo)
+        os.chdir(new_dir)
+        yield
+    finally:
+        os.chdir(curdir)
 
-        image_spec = imagebuilder.make_imagespec(image_dir, image_name)
+
+def commit_file(repo_dir, path, contents):
+    full_path = repo_dir / path
+    os.makedirs(os.path.dirname(full_path), exist_ok=True)
+
+    with open(full_path, 'w') as f:
+        f.write(contents)
+
+    git(repo_dir, 'add', path)
+    git(repo_dir, 'commit', '-m', f'Added {path}')
+
+
+def test_tag_generation(git_repo):
+    """
+    Tag should be last commit of modified image dir
+    """
+    commit_file(git_repo, 'image/Dockerfile', 'FROM busybox')
+    commit_file(git_repo, 'unrelated/file', 'unrelated')
+
+    with cwd(git_repo):
+        image = config.LocalImage('test-image', 'image')
+        assert image.tag == gitutils.last_modified_commit('image')
+        # Make sure tag isn't influenced by changes outside of iamge dir
+        assert image.tag != gitutils.last_modified_commit('unrelated')
+
+
+        # Change the Dockerfile and see that the tag changes
+        commit_file(git_repo, 'image/Dockerfile', 'FROM busybox:latest')
+        new_image = config.LocalImage('test-image', 'image')
+        assert new_image.tag == gitutils.last_modified_commit('image')
+        assert new_image.tag != image.tag
+
+
+def test_build_image(git_repo, local_registry):
+    """
+    Test building a small image, pushing it and testing it exists
+    """
+    commit_file(git_repo, 'image/Dockerfile', 'FROM busybox')
+
+    with cwd(git_repo):
+        image = config.LocalImage(f'{local_registry}/test-build-image', 'image')
+        image.build()
+
+        assert not image.exists_in_registry()
+
+        image.push()
+
+        assert image.exists_in_registry()
+
+
+def test_parent_image_fetching(git_repo, local_registry):
+    """
+    Previous tags of images should be fetched before building new one
+    """
+    image_name = f'{local_registry}/parent-image-fetching'
+
+    with cwd(git_repo):
+        # Create an image directory with a simple dockerfile
+        commit_file(git_repo, 'image/Dockerfile',
+        """
+        FROM busybox
+        RUN echo 1 > /number
+        """)
+        first_image = config.LocalImage(image_name, 'image')
+        first_image.build()
+
+        # Image shouldn't exist in registry until we push it
+        assert not first_image.exists_in_registry()
+        first_image.push()
+
+        assert first_image.exists_in_registry()
+
         client = docker.from_env()
-        imagebuilder.build_image(client, image_dir, image_spec, cache_from=None, push=True)
-        client.images.remove(image_spec)
+
+        # Remove it locally after pushing it, and make sure it is removed
+        # This lets us test if the pulling actually worked
+        client.images.remove(first_image.image_spec)
 
         with pytest.raises(docker.errors.ImageNotFound):
-            client.images.get(image_spec)
+            client.images.get(first_image.image_spec)
 
-        assert client.containers.run(image_spec, 'cat /nonce').decode().strip() == nonce
-    finally:
-        os.chdir(cur_dir)
+        # Update the image directory
+        commit_file(git_repo, 'image/Dockerfile',
+        """
+        FROM busybox
+        RUN echo 2 > /number
+        """)
 
+        second_image = config.LocalImage(image_name, 'image')
 
-def test_build_fail(git_repo):
-    """
-    Throw an error if the build fails
-    """
-    client = docker.from_env()
-    with open(os.path.join(git_repo, 'Dockerfile'), 'w') as f:
-        f.write('FROM busybox\n')
-        f.write('RUN non-existent')
-    with pytest.raises(SystemExit):
-        imagebuilder.build_image(client, git_repo, 'test:latest')
+        # We must be able to tell that the first image tag is a possible parent of the second
+        assert first_image.tag in second_image.get_possible_parent_tags()
+
+        # Fetching the parents of the second image should bring the first docker image locally
+        second_image.fetch_parent_image()
+        assert client.images.get(first_image.image_spec)
