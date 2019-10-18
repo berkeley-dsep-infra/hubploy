@@ -10,6 +10,9 @@ from . import gitutils
 yaml = YAML(typ='safe')
 
 class LocalImage:
+    """
+    A docker image that can be built from a local filesystem source
+    """
     def __init__(self, name, path, helm_substitution_path='jupyterhub.singleuser.image'):
         """
         Create an Image from a local path

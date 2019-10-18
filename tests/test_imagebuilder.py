@@ -3,11 +3,9 @@ import tempfile
 import contextlib
 import pathlib
 import os
-import secrets
 import pytest
 import subprocess
 import docker
-import pathlib
 import time
 import docker.errors
 
@@ -23,9 +21,11 @@ def git_repo():
         subprocess.check_output(['git', 'init'], cwd=d)
         yield pathlib.Path(d)
 
+
 def git(repo_dir, *cmd):
     with cwd(repo_dir):
         subprocess.check_call(['git'] + list(cmd))
+
 
 @pytest.fixture
 def open_port():
@@ -62,6 +62,7 @@ def local_registry(open_port):
         container.stop()
         container.remove()
 
+
 @contextlib.contextmanager
 def cwd(new_dir):
     curdir = os.getcwd()
@@ -81,6 +82,7 @@ def commit_file(repo_dir, path, contents):
 
     git(repo_dir, 'add', path)
     git(repo_dir, 'commit', '-m', f'Added {path}')
+
 
 def test_tag_generation(git_repo):
     """

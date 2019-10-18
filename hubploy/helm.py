@@ -15,13 +15,11 @@ deployments/
       - staging.yaml
       - prod.yaml
 """
-import argparse
 import itertools
 import os
 import shutil
 import subprocess
 
-from hubploy import gitutils
 from hubploy.config import get_config
 
 

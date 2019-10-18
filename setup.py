@@ -1,5 +1,4 @@
 import setuptools
-from glob import glob
 
 setuptools.setup(
     name='hubploy',

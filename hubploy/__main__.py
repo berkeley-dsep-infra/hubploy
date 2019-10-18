@@ -1,7 +1,6 @@
 import argparse
 import hubploy
 from hubploy import helm, auth
-import docker
 
 
 def main():
@@ -29,7 +28,7 @@ def main():
         '--push',
         action='store_true',
     )
-    
+
     deploy_parser = subparsers.add_parser('deploy', help='Deploy a chart to the given environment')
 
     deploy_parser.add_argument(
