@@ -96,14 +96,12 @@ def test_tag_generation(git_repo):
         assert image.tag != gitutils.last_modified_commit('unrelated')
 
 
-        # Change the Dockerfile and see what's up
+        # Change the Dockerfile and see that the tag changes
         commit_file(git_repo, 'image/Dockerfile', 'FROM busybox:latest')
         new_image = config.LocalImage('test-image', 'image')
         assert new_image.tag == gitutils.last_modified_commit('image')
         assert new_image.tag != image.tag
 
-        # Test that our older commit is listed as a 'possible parent' tag
-        assert image.tag in new_image.get_possible_parent_tags()
 
 def test_build_image(git_repo, local_registry):
     """
@@ -121,3 +119,50 @@ def test_build_image(git_repo, local_registry):
 
         assert image.exists_in_registry()
 
+
+def test_parent_image_fetching(git_repo, local_registry):
+    """
+    Previous tags of images should be fetched before building new one
+    """
+    image_name = f'{local_registry}/parent-image-fetching'
+
+    with cwd(git_repo):
+        # Create an image directory with a simple dockerfile
+        commit_file(git_repo, 'image/Dockerfile',
+        """
+        FROM busybox
+        RUN echo 1 > /number
+        """)
+        first_image = config.LocalImage(image_name, 'image')
+        first_image.build()
+
+        # Image shouldn't exist in registry until we push it
+        assert not first_image.exists_in_registry()
+        first_image.push()
+
+        assert first_image.exists_in_registry()
+
+        client = docker.from_env()
+
+        # Remove it locally after pushing it, and make sure it is removed
+        # This lets us test if the pulling actually worked
+        client.images.remove(first_image.image_spec)
+
+        with pytest.raises(docker.errors.ImageNotFound):
+            client.images.get(first_image.image_spec)
+
+        # Update the image directory
+        commit_file(git_repo, 'image/Dockerfile',
+        """
+        FROM busybox
+        RUN echo 2 > /number
+        """)
+
+        second_image = config.LocalImage(image_name, 'image')
+
+        # We must be able to tell that the first image tag is a possible parent of the second
+        assert first_image.tag in second_image.get_possible_parent_tags()
+
+        # Fetching the parents of the second image should bring the first docker image locally
+        second_image.fetch_parent_image()
+        assert client.images.get(first_image.image_spec)
