@@ -1,4 +1,6 @@
-version: 2
+version: 2.1
+orbs:
+  orb-tools: circleci/orb-tools@8.27.5
 jobs:
   build:
     machine:
@@ -47,3 +49,12 @@ jobs:
 
       - store_test_results:
           path: test-reports
+
+workflows:
+  test-code:
+    jobs:
+    - build
+  test-orb:
+    jobs:
+    - orb-tools/lint:
+        lint-dir: orb/
