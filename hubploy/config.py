@@ -103,6 +103,9 @@ class LocalImage:
                 return parent_image_spec
             except docker.errors.NotFound:
                 pass
+            except  docker.errors.APIError:
+                # FIXME: This is too generic, but a lot of remote repos don't raise NotFound. ECR :()
+                pass
         return None
 
     def needs_building(self, check_registry=False, commit_range=None):
