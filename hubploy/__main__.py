@@ -1,5 +1,6 @@
 import argparse
 import hubploy
+import sys
 from hubploy import helm, auth, commitrange
 
 
@@ -66,6 +67,12 @@ def main():
     config = hubploy.config.get_config(args.deployment)
 
     if args.command == 'build':
+        if not args.check_registry and not args.commit_range:
+            # commit_range autodetection failed, and check registry isn't set
+            # FIXME: Provide an actually useful error message
+            print("Could not auto-detect commit-range, and --check-registry is not set", file=sys.stderr)
+            print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
+            sys.exit(1)
 
         if args.push or args.check_registry:
             auth.registry_auth(args.deployment)
