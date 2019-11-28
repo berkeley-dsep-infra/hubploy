@@ -1,6 +1,6 @@
 import argparse
 import hubploy
-from hubploy import helm, auth
+from hubploy import helm, auth, commitrange
 
 
 def main():
@@ -16,7 +16,8 @@ def main():
     trigger_change_group = build_parser.add_mutually_exclusive_group()
     trigger_change_group.add_argument(
         '--commit-range',
-        help='Trigger image rebuilds only if files in image directory have changed in this git commit range'
+        help='Trigger image rebuilds only if files in image directory have changed in this git commit range',
+        default=commitrange.get_commit_range()
     )
     # FIXME: Needs a better name?
     trigger_change_group.add_argument(
