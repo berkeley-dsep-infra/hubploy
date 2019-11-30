@@ -53,7 +53,7 @@ def main():
         '--version',
     )
     deploy_parser.add_argument(
-        '--timeout',
+        '--timeout'
     )
     deploy_parser.add_argument(
         '--force',
