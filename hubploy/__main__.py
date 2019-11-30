@@ -54,7 +54,6 @@ def main():
     )
     deploy_parser.add_argument(
         '--timeout',
-        nargs=1
     )
     deploy_parser.add_argument(
         '--force',
