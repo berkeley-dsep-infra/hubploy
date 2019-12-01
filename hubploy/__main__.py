@@ -52,6 +52,13 @@ def main():
     deploy_parser.add_argument(
         '--version',
     )
+    deploy_parser.add_argument(
+        '--timeout'
+    )
+    deploy_parser.add_argument(
+        '--force',
+        action='store_true'
+    )
 
     args = argparser.parse_args()
 
@@ -71,4 +78,4 @@ def main():
 
     elif args.command == 'deploy':
         auth.cluster_auth(args.deployment)
-        helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version)
+        helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force)
