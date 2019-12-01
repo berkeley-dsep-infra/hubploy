@@ -57,7 +57,6 @@ def main():
     )
     deploy_parser.add_argument(
         '--force',
-        nargs=0,
         action='store_true'
     )
 
