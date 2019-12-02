@@ -81,11 +81,16 @@ def registry_auth_aws(deployment, project, zone, service_key):
     registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
     # amazon-ecr-credential-helper installed in .circleci/config.yaml
     # this adds necessary line to authenticate docker with ecr
-    dockerConfig = os.path.join(os.path.expanduser('~'), '.docker', 'config.json')
-    with open(dockerConfig, 'r') as f:
-        config = json.load(f)
-        config['credHelpers'][registry] = 'ecr-login'
-    with open(dockerConfig, 'w') as f:
+    docker_config_dir = os.path.expanduser('~/.docker')
+    os.makedirs(docker_config_dir, exist_ok=True)
+    docker_config = os.path.join(docker_config_dir, 'config.json')
+    if os.path.exists(docker_config):
+        with open(docker_config, 'r') as f:
+            config = json.load(f)
+    else:
+        config = {'credHelpers': {}}
+    config['credHelpers'][registry] = 'ecr-login'
+    with open(docker_config, 'w') as f:
         json.dump(config, f)
 
 
