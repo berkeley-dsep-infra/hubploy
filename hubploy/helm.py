@@ -70,7 +70,7 @@ def deploy(
     helm_config_overrides=None,
     version=None,
     timeout=None,
-    force
+    force=False
 ):
     """
     Deploy a JupyterHub.
