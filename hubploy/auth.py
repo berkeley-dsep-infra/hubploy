@@ -188,6 +188,14 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
+    # move credentials to standard location
+    service_key_path = os.path.join(
+        'deployments', deployment, 'secrets', service_key
+    )
+    cred_dir = os.path.expanduser('~/.aws')
+    if not os.path.isdir(cred_dir):
+        os.mkdir(cred_dir)
+    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
     subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                            '--name', cluster, '--region', zone])
