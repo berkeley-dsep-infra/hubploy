@@ -65,6 +65,8 @@ class LocalImage:
             return image_manifest is not None
         except docker.errors.ImageNotFound:
             return False
+        except docker.errors.NotFound:
+            return False
         except docker.errors.APIError as e:
             # This message seems to vary across registries?
             if e.explanation.startswith('manifest unknown: '):
