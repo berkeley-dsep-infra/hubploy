@@ -5,7 +5,7 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 ENV VENV_PATH /opt/venv
-ENV PATH ${VENV_PATH}:$/opt/google-cloud-sdk/bin:/opt/awscli/bin:${PATH}
+ENV PATH ${VENV_PATH}:/opt/google-cloud-sdk/bin:/opt/awscli/bin:${PATH}
 
 # Force gcloud to run on python3 ugh
 ENV CLOUDSDK_PYTHON python3
