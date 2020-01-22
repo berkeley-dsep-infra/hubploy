@@ -21,7 +21,13 @@ RUN cd /tmp && \
 # FIXME: Install multiple versions of helm & choose at runtime
 RUN cd /tmp && mkdir helm && \
     curl -sSL https://get.helm.sh/helm-v2.14.3-linux-amd64.tar.gz | tar -xzf - -C helm && \
-    mv helm/linux-amd64/helm /usr/local/bin/helm
+    mv helm/linux-amd64/helm /usr/local/bin/helm && \
+    rm -rf helm
+
+RUN cd /tmp && mkdir helm && \
+    curl -sSL https://get.helm.sh/helm-v3.0.2-linux-amd64.tar.gz | tar -xzf - -C helm && \
+    mv helm/linux-amd64/helm /usr/local/bin/helm3 && \
+    rm -rf helm
 
 RUN python3 -m venv ${VENV_PATH}
 
