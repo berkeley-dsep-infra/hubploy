@@ -23,6 +23,9 @@ import subprocess
 from hubploy.config import get_config
 
 
+HELM_EXECUTABLE = os.environ.get('HELM_EXECUTABLE', 'helm')
+
+
 def helm_upgrade(
     name,
     namespace,
@@ -40,11 +43,11 @@ def helm_upgrade(
     if os.path.exists(chart):
         shutil.rmtree(os.path.join(chart, 'charts'), ignore_errors=True)
         subprocess.check_call([
-            'helm', 'dep', 'up'
+            HELM_EXECUTABLE, 'dep', 'up'
         ], cwd=chart)
 
     cmd = [
-        'helm',
+        HELM_EXECUTABLE,
         'upgrade',
         '--wait',
         '--install',
