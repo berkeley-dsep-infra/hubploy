@@ -7,7 +7,8 @@ setuptools.setup(
     author="Yuvi Panda",
     packages=setuptools.find_packages(),
     install_requires=[
-        'docker'#,
+        'docker'
+        # Wait for update to repo2docker before re-enabling this requirement
         #'jupyter-repo2docker>=0.8',
     ],
     entry_points={
