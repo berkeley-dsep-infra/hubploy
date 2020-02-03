@@ -73,10 +73,13 @@ def registry_auth_aws(deployment, project, zone, service_key):
             f'The service_key file {service_key_path} does not exist')
 
     # move credentials to standard location
-    cred_dir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(cred_dir):
-        os.mkdir(cred_dir)
-    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
+    #cred_dir = os.path.expanduser('~/.aws')
+    #if not os.path.isdir(cred_dir):
+    #    os.mkdir(cred_dir)
+    # Overwrites the ~/.aws/credentials file, which is annoying
+    #shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
+
+    helper_aws_cred_parser(service_key_path)
 
     registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
     # amazon-ecr-credential-helper installed in .circleci/config.yaml
@@ -192,11 +195,14 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
-    cred_dir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(cred_dir):
-        os.mkdir(cred_dir)
-    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
+    #cred_dir = os.path.expanduser('~/.aws')
+    #if not os.path.isdir(cred_dir):
+    #    os.mkdir(cred_dir)
+    #shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
+    helper_aws_cred_parser(service_key_path)
+
+    # My config needs this to have a --profile flag as well
     subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
                            '--name', cluster, '--region', zone])
 
@@ -239,6 +245,31 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--name', cluster,
         '--resource-group', resource_group
     ])
+
+# Instead of moving the credentials file and overwriting,
+# Make multiple `aws configure set` calls
+# Overwriting existing config with the same values is fine
+# Will automatically create the new profile if it doesn't exist
+def helper_aws_cred_parser(service_key_path):
+
+    with open(service_key_path) as f:
+        profile = ''
+
+        for line in f:
+
+            # Expect profile IN BRACKETS on the first line
+            if (line[0] == '['):
+                profile = line.lstrip('[').rstrip(']\n')
+
+            # Expect `aws configure` arguments on subsequent lines
+            else:
+                config_arg = ''.join(['profile.', profile, '.', line[:line.index('=')].strip()])
+                config_val = line[line.index('=')+1:].strip()
+
+                subprocess.check_call(['aws2', 'configure', 'set', config_arg, config_val])
+
+
+
 
 
 
