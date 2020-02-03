@@ -79,7 +79,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
     # Overwrites the ~/.aws/credentials file, which is annoying
     #shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    helper_aws_cred_parser(service_key_path)
+    profile = helper_aws_cred_parser(service_key_path)
 
     registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
     # amazon-ecr-credential-helper installed in .circleci/config.yaml
@@ -200,11 +200,11 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     #    os.mkdir(cred_dir)
     #shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    helper_aws_cred_parser(service_key_path)
+    profile = helper_aws_cred_parser(service_key_path)
 
     # My config needs this to have a --profile flag as well
     subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
-                           '--name', cluster, '--region', zone])
+                           '--name', cluster, '--region', zone, '--profile', profile])
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
@@ -267,6 +267,8 @@ def helper_aws_cred_parser(service_key_path):
                 config_val = line[line.index('=')+1:].strip()
 
                 subprocess.check_call(['aws2', 'configure', 'set', config_arg, config_val])
+
+        return profile
 
 
 
