@@ -19,7 +19,6 @@ def registry_auth(deployment, push, check_registry):
     Do appropriate registry authentication for given deployment
     """
     # Check if authentication needs to be done
-    
     if push or check_registry:
 
         config = get_config(deployment)
@@ -83,13 +82,8 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
+    # Set env variable for credential file location
     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
-    # move credentials to standard location
-    #cred_dir = os.path.expanduser('~/.aws')
-    #if not os.path.isdir(cred_dir):
-    #    os.mkdir(cred_dir)
-    #shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
     try:
         registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
@@ -110,6 +104,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
         yield 0
 
     finally:
+        # Unset env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = ""
 
 
@@ -214,17 +209,13 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    # move credentials to standard location
+    # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
 
+    # Set env variable for credential file location
     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
-    #cred_dir = os.path.expanduser('~/.aws')
-    #if not os.path.isdir(cred_dir):
-    #    os.mkdir(cred_dir)
-    #shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
     try:
         subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
@@ -232,6 +223,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         yield 0
 
     finally:
+        # Unset env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = ""
 
 
