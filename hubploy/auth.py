@@ -64,7 +64,7 @@ def registry_auth_gcloud(deployment, project, service_key):
         'gcloud', 'auth', 'configure-docker'
     ])
 
-    yield 0
+    yield
 
 
 @contextmanager
@@ -101,7 +101,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
         with open(docker_config, 'w') as f:
             json.dump(config, f)
 
-        yield 0
+        yield
 
     finally:
         # Unset env variable for credential file location
@@ -147,7 +147,7 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         '--name', registry
     ])
 
-    yield 0
+    yield
 
 @contextmanager
 def cluster_auth(deployment):
@@ -199,7 +199,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
-    yield 0
+    yield
 
 
 @contextmanager
@@ -220,7 +220,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     try:
         subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
                                '--name', cluster, '--region', zone])
-        yield 0
+        yield
 
     finally:
         # Unset env variable for credential file location
@@ -267,7 +267,7 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--resource-group', resource_group
     ])
 
-    yield 0
+    yield
 
 
 
