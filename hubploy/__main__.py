@@ -74,16 +74,17 @@ def main():
             print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
             sys.exit(1)
 
-        if args.push or args.check_registry:
-            auth.registry_auth(args.deployment)
+        # Move this line to auth.py so we always use context manager
+        #if args.push or args.check_registry:
+        with auth.registry_auth(args.deployment, args.push, args.check_registry) as registry_auth_code:
 
-        for image in config.get('images', {}).get('images', {}):
-            if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
-                image.fetch_parent_image()
-                image.build()
-                if args.push:
-                    image.push()
+            for image in config.get('images', {}).get('images', {}):
+                if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
+                    image.fetch_parent_image()
+                    image.build()
+                    if args.push:
+                        image.push()
 
     elif args.command == 'deploy':
-        with auth.cluster_auth(args.deployment):
+        with auth.cluster_auth(args.deployment) as cluster_auth_code:
             helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force)

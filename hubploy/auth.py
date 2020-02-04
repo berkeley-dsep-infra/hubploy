@@ -14,30 +14,35 @@ yaml = YAML(typ='rt')
 
 
 @contextmanager
-def registry_auth(deployment):
+def registry_auth(deployment, push, check_registry):
     """
     Do appropriate registry authentication for given deployment
     """
-    config = get_config(deployment)
+    # Check if authentication needs to be done
+    
+    if push or check_registry:
 
-    if 'images' in config and 'registry' in config['images']:
-        registry = config['images']['registry']
-        provider = registry.get('provider')
-        if provider == 'gcloud':
-            registry_auth_gcloud(
-                deployment, **registry['gcloud']
-            )
-        elif provider == 'aws':
-            registry_auth_aws(
-                deployment, **registry['aws']
-            )
-        elif provider == 'azure':
-            registry_auth_azure(
-                deployment, **registry['azure']
-            )
-        else:
-            raise ValueError(
-                f'Unknown provider {provider} found in hubploy.yaml')
+        config = get_config(deployment)
+
+        if 'images' in config and 'registry' in config['images']:
+            registry = config['images']['registry']
+            provider = registry.get('provider')
+            if provider == 'gcloud':
+                yield registry_auth_gcloud(
+                    deployment, **registry['gcloud']
+                )
+            elif provider == 'aws':
+                yield registry_auth_aws(
+                    deployment, **registry['aws']
+                )
+            elif provider == 'azure':
+                yield registry_auth_azure(
+                    deployment, **registry['azure']
+                )
+            else:
+                raise ValueError(
+                    f'Unknown provider {provider} found in hubploy.yaml')
+    
 
 
 @contextmanager
@@ -59,6 +64,8 @@ def registry_auth_gcloud(deployment, project, service_key):
     subprocess.check_call([
         'gcloud', 'auth', 'configure-docker'
     ])
+
+    yield 0
 
 
 @contextmanager
@@ -99,6 +106,8 @@ def registry_auth_aws(deployment, project, zone, service_key):
         config['credHelpers'][registry] = 'ecr-login'
         with open(docker_config, 'w') as f:
             json.dump(config, f)
+
+        yield 0
 
     finally:
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = ""
@@ -143,6 +152,8 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         '--name', registry
     ])
 
+    yield 0
+
 @contextmanager
 def cluster_auth(deployment):
     """
@@ -154,15 +165,15 @@ def cluster_auth(deployment):
         cluster = config['cluster']
         provider = cluster.get('provider')
         if provider == 'gcloud':
-            cluster_auth_gcloud(
+            yield cluster_auth_gcloud(
                 deployment, **cluster['gcloud']
             )
         elif provider == 'aws':
-            cluster_auth_aws(
+            yield cluster_auth_aws(
                 deployment, **cluster['aws']
             )
         elif provider == 'azure':
-            cluster_auth_azure(
+            yield cluster_auth_azure(
                 deployment, **cluster['azure']
             )
         else:
@@ -193,6 +204,8 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
+    yield 0
+
 
 @contextmanager
 def cluster_auth_aws(deployment, project, cluster, zone, service_key):
@@ -216,6 +229,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     try:
         subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
                                '--name', cluster, '--region', zone])
+        yield 0
 
     finally:
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = ""
@@ -260,6 +274,8 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--name', cluster,
         '--resource-group', resource_group
     ])
+
+    yield 0
 
 
 
