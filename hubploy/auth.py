@@ -105,7 +105,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
     finally:
         # Unset env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = ""
+        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
 
 
 @contextmanager
@@ -224,7 +224,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     finally:
         # Unset env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = ""
+        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
 
 
 @contextmanager
