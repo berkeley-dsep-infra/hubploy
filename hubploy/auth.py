@@ -87,7 +87,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
     try:
         registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
-        # amazon-ecr-credential-helper installed in .circleci/config.yaml
+        # Requires amazon-ecr-credential-helper to be already installed
         # this adds necessary line to authenticate docker with ecr
         docker_config_dir = os.path.expanduser('~/.docker')
         os.makedirs(docker_config_dir, exist_ok=True)
