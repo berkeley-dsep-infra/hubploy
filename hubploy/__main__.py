@@ -76,7 +76,7 @@ def main():
 
         # Move this line to auth.py so we always use context manager
         #if args.push or args.check_registry:
-        with auth.registry_auth(args.deployment, args.push, args.check_registry) as registry_auth_code:
+        with auth.registry_auth(args.deployment, args.push, args.check_registry):
 
             for image in config.get('images', {}).get('images', {}):
                 if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
@@ -86,5 +86,5 @@ def main():
                         image.push()
 
     elif args.command == 'deploy':
-        with auth.cluster_auth(args.deployment) as cluster_auth_code:
+        with auth.cluster_auth(args.deployment):
             helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force)
