@@ -10,3 +10,8 @@ scheduling:
 prePuller:
   continuous:
     enabled: false
+
+singleuser:
+  storage:
+    dynamic:
+      storageClass: aws-efs

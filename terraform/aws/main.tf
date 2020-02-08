@@ -83,9 +83,6 @@ module "eks" {
       }
       additional_tags = {
       }
-      additional_security_group_ids =[
-        # aws_security_group.external_elb_ingress.id
-      ]
     }
     notebook = {
       desired_capacity = 1
@@ -104,10 +101,4 @@ module "eks" {
   map_roles    = var.map_roles
   map_users    = var.map_users
   map_accounts = var.map_accounts
-}
-
-resource "aws_efs_file_system" "home-dirs" {
-  tags = {
-    Name = "${var.cluster_name}-home-dirs"
-  }
 }
