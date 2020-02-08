@@ -1,6 +1,11 @@
 terraform {
   required_version = ">= 0.12.6"
 }
+
+resource "random_password" "proxy_secret_token" {
+  length = 64
+}
+
 provider "helm" {
   kubernetes {
     host                   = data.aws_eks_cluster.cluster.endpoint
@@ -30,4 +35,10 @@ resource "helm_release" "jupyterhub" {
   values =[
     file("values.yaml")
   ]
+
+  # Terraform keeps this in state, so we get it automatically!
+  set{
+    name = "proxy.secretToken"
+    value = random_password.proxy_secret_token.result
+  }
 }
