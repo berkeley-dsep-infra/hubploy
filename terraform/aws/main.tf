@@ -61,7 +61,8 @@ module "vpc" {
 module "eks" {
   source       = "terraform-aws-modules/eks/aws"
   cluster_name = var.cluster_name
-  subnets      = module.vpc.private_subnets
+  # FIXME: We should probably put these in the private subnet?
+  subnets      = module.vpc.public_subnets
 
   vpc_id = module.vpc.vpc_id
 
@@ -82,6 +83,9 @@ module "eks" {
       }
       additional_tags = {
       }
+      additional_security_group_ids =[
+        # aws_security_group.external_elb_ingress.id
+      ]
     }
     notebook = {
       desired_capacity = 1

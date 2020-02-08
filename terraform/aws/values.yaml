@@ -1,0 +1,13 @@
+proxy:
+  secretToken: 8a60b58fbba672d3c6afde1619c12e2d149b2ff95eedcef8e376c9e877e2a788
+  service:
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+
+scheduling:
+  userScheduler:
+    enabled: false
+
+prePuller:
+  continuous:
+    enabled: false
