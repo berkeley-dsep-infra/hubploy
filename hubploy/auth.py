@@ -7,44 +7,37 @@ import subprocess
 import shutil
 
 from hubploy.config import get_config
-from contextlib import contextmanager
 
 from ruamel.yaml import YAML
 yaml = YAML(typ='rt')
 
 
-@contextmanager
-def registry_auth(deployment, push, check_registry):
+def registry_auth(deployment):
     """
     Do appropriate registry authentication for given deployment
     """
-    # Check if authentication needs to be done
-    if push or check_registry:
+    config = get_config(deployment)
 
-        config = get_config(deployment)
-
-        if 'images' in config and 'registry' in config['images']:
-            registry = config['images']['registry']
-            provider = registry.get('provider')
-            if provider == 'gcloud':
-                yield registry_auth_gcloud(
-                    deployment, **registry['gcloud']
-                )
-            elif provider == 'aws':
-                yield registry_auth_aws(
-                    deployment, **registry['aws']
-                )
-            elif provider == 'azure':
-                yield registry_auth_azure(
-                    deployment, **registry['azure']
-                )
-            else:
-                raise ValueError(
-                    f'Unknown provider {provider} found in hubploy.yaml')
-    
+    if 'images' in config and 'registry' in config['images']:
+        registry = config['images']['registry']
+        provider = registry.get('provider')
+        if provider == 'gcloud':
+            registry_auth_gcloud(
+                deployment, **registry['gcloud']
+            )
+        elif provider == 'aws':
+            registry_auth_aws(
+                deployment, **registry['aws']
+            )
+        elif provider == 'azure':
+            registry_auth_azure(
+                deployment, **registry['azure']
+            )
+        else:
+            raise ValueError(
+                f'Unknown provider {provider} found in hubploy.yaml')
 
 
-@contextmanager
 def registry_auth_gcloud(deployment, project, service_key):
     """
     Setup GCR authentication with a service_key
@@ -64,10 +57,7 @@ def registry_auth_gcloud(deployment, project, service_key):
         'gcloud', 'auth', 'configure-docker'
     ])
 
-    yield
 
-
-@contextmanager
 def registry_auth_aws(deployment, project, zone, service_key):
     """
     Setup AWS authentication to ECR container registry
@@ -82,33 +72,28 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-    # Set env variable for credential file location
-    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+    # move credentials to standard location
+    cred_dir = os.path.expanduser('~/.aws')
+    if not os.path.isdir(cred_dir):
+        os.mkdir(cred_dir)
+    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    try:
-        registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
-        # Requires amazon-ecr-credential-helper to be already installed
-        # this adds necessary line to authenticate docker with ecr
-        docker_config_dir = os.path.expanduser('~/.docker')
-        os.makedirs(docker_config_dir, exist_ok=True)
-        docker_config = os.path.join(docker_config_dir, 'config.json')
-        if os.path.exists(docker_config):
-            with open(docker_config, 'r') as f:
-                config = json.load(f)
-        else:
-            config = {'credHelpers': {}}
-        config['credHelpers'][registry] = 'ecr-login'
-        with open(docker_config, 'w') as f:
-            json.dump(config, f)
-
-        yield
-
-    finally:
-        # Unset env variable for credential file location
-        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+    registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+    # amazon-ecr-credential-helper installed in .circleci/config.yaml
+    # this adds necessary line to authenticate docker with ecr
+    docker_config_dir = os.path.expanduser('~/.docker')
+    os.makedirs(docker_config_dir, exist_ok=True)
+    docker_config = os.path.join(docker_config_dir, 'config.json')
+    if os.path.exists(docker_config):
+        with open(docker_config, 'r') as f:
+            config = json.load(f)
+    else:
+        config = {'credHelpers': {}}
+    config['credHelpers'][registry] = 'ecr-login'
+    with open(docker_config, 'w') as f:
+        json.dump(config, f)
 
 
-@contextmanager
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
     Azure authentication for ACR
@@ -147,9 +132,7 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         '--name', registry
     ])
 
-    yield
 
-@contextmanager
 def cluster_auth(deployment):
     """
     Do appropriate cluster authentication for given deployment
@@ -160,15 +143,15 @@ def cluster_auth(deployment):
         cluster = config['cluster']
         provider = cluster.get('provider')
         if provider == 'gcloud':
-            yield cluster_auth_gcloud(
+            cluster_auth_gcloud(
                 deployment, **cluster['gcloud']
             )
         elif provider == 'aws':
-            yield cluster_auth_aws(
+            cluster_auth_aws(
                 deployment, **cluster['aws']
             )
         elif provider == 'azure':
-            yield cluster_auth_azure(
+            cluster_auth_azure(
                 deployment, **cluster['azure']
             )
         else:
@@ -176,7 +159,6 @@ def cluster_auth(deployment):
                 f'Unknown provider {provider} found in hubploy.yaml')
 
 
-@contextmanager
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     """
     Setup GKE authentication with service_key
@@ -199,35 +181,26 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
-    yield
 
-
-@contextmanager
 def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     """
     Setup AWS authentication with service_key
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    # Get credentials from standard location
+    # move credentials to standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
+    cred_dir = os.path.expanduser('~/.aws')
+    if not os.path.isdir(cred_dir):
+        os.mkdir(cred_dir)
+    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    # Set env variable for credential file location
-    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
-    try:
-        subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
-                               '--name', cluster, '--region', zone])
-        yield
-
-    finally:
-        # Unset env variable for credential file location
-        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+    subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
+                           '--name', cluster, '--region', zone])
 
 
-@contextmanager
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     """
 
@@ -266,8 +239,6 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--name', cluster,
         '--resource-group', resource_group
     ])
-
-    yield
 
 
 
