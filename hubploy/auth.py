@@ -218,7 +218,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
     try:
-        subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
+        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                                '--name', cluster, '--region', zone])
         yield
 
