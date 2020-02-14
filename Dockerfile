@@ -15,8 +15,7 @@ RUN curl -sSL  https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google
 RUN cd /tmp && \
     curl -sSL "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
     unzip -qq awscliv2.zip && \
-    ./aws/install -i /opt/awscli -b /opt/awscli/bin && \
-    ln -s /opt/awscli/bin/aws2 /opt/awscli/bin/aws
+    ./aws/install -i /opt/awscli -b /opt/awscli/bin
 
 # FIXME: Install multiple versions of helm & choose at runtime
 RUN cd /tmp && mkdir helm && \
