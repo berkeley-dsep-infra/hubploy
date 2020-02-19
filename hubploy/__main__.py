@@ -87,3 +87,6 @@ def main():
     elif args.command == 'deploy':
         auth.cluster_auth(args.deployment)
         helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force)
+
+if __name__ == '__main__':
+    main()
