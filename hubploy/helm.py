@@ -19,6 +19,9 @@ import itertools
 import os
 import shutil
 import subprocess
+import kubernetes.config
+from kubernetes.client import CoreV1Api, rest
+from kubernetes.client.models import V1Namespace, V1ObjectMeta
 
 from hubploy.config import get_config
 
@@ -45,6 +48,25 @@ def helm_upgrade(
         subprocess.check_call([
             HELM_EXECUTABLE, 'dep', 'up'
         ], cwd=chart)
+
+    # Create namespace explicitly, since helm3 removes support for it
+    # See https://github.com/helm/helm/issues/6794
+    # helm2 only creates the namespace if it doesn't exist, so we should be fine
+    try:
+        kubernetes.config.load_kube_config()
+    except:
+        kubernetes.config.load_incluster_config()
+
+    api = CoreV1Api()
+    try:
+        api.read_namespace(namespace)
+    except rest.ApiException as e:
+        if e.status == 404:
+            # Create namespace
+            print(f"Namespace {namespace} does not exist, creating it...")
+            api.create_namespace(V1Namespace(metadata=V1ObjectMeta(name=namespace)))
+        else:
+            raise
 
     cmd = [
         HELM_EXECUTABLE,
