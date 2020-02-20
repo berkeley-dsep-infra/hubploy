@@ -197,7 +197,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         os.mkdir(cred_dir)
     shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    subprocess.check_call(['aws2', 'eks', 'update-kubeconfig',
+    subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                            '--name', cluster, '--region', zone])
 
 
