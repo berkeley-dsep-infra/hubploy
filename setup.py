@@ -8,7 +8,7 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'docker',
-        'jupyter-repo2docker>=0.8',
+        'jupyter-repo2docker>=0.11',
         'kubernetes'
     ],
     entry_points={

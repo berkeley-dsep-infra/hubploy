@@ -15,8 +15,7 @@ jobs:
       - restore_cache:
           keys:
           - v2-dependencies-3.7.0-{{ checksum "setup.py" }}-{{ checksum "dev-requirements.txt" }}
-          # fallback to using the latest cache if no exact match is found
-          - v2-dependencies-3.7.0-
+          # Don't use any cache if we don't have an exact match
 
       - run:
           name: setup dependencies
@@ -24,6 +23,7 @@ jobs:
             pyenv global 3.7.0
             python3 -m venv venv
             source venv/bin/activate
+            pip install --upgrade pip
             pip install -r dev-requirements.txt
             pip install -e .
             git config --global user.email "ci@circleci"
