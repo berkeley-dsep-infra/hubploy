@@ -129,13 +129,14 @@ class LocalImage:
             return gitutils.path_touched(self.path, commit_range=commit_range)
 
 
-    def build(self):
+    def build(self, reuse_cache=True):
         """
         Build local image with repo2docker
         """
-        parent_image_spec = self.fetch_parent_image()
-        if parent_image_spec:
-            self.r2d.cache_from = [parent_image_spec]
+        if reuse_cache:
+            parent_image_spec = self.fetch_parent_image()
+            if parent_image_spec:
+                self.r2d.cache_from = [parent_image_spec]
 
         self.r2d.build()
 

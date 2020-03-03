@@ -29,6 +29,12 @@ def main():
     build_parser.add_argument(
         '--push',
         action='store_true',
+        help="Push image after building"
+    )
+    build_parser.add_argument(
+        '--no-cache',
+        action='store_true',
+        help="Don't pull previous image to re-use cache from"
     )
 
     deploy_parser = subparsers.add_parser('deploy', help='Deploy a chart to the given environment')
@@ -79,8 +85,7 @@ def main():
 
         for image in config.get('images', {}).get('images', {}):
             if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
-                image.fetch_parent_image()
-                image.build()
+                image.build(not args.no_cache)
                 if args.push:
                     image.push()
 
