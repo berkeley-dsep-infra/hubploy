@@ -21,7 +21,7 @@ jobs:
             pyenv global 3.7.0
             python3 -m venv venv
             source venv/bin/activate
-            pip install --upgrade pip
+            pip install --upgrade pip setuptools
             pip install -r dev-requirements.txt
             pip install -e .
             git config --global user.email "ci@circleci"
