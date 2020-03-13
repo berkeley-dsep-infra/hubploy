@@ -67,6 +67,14 @@ def main():
         '--force',
         action='store_true'
     )
+    deploy_parser.add_argument(
+        '--atomic',
+        action='store_true'
+    )
+    deploy_parser.add_argument(
+        '--cleanup-on-fail',
+        action='store_true'
+    )
 
     args = argparser.parse_args()
 
@@ -91,7 +99,7 @@ def main():
 
     elif args.command == 'deploy':
         auth.cluster_auth(args.deployment)
-        helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force)
+        helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force, args.atomic, args.cleanup_on_fail)
 
 if __name__ == '__main__':
     main()

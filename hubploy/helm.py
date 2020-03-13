@@ -37,7 +37,9 @@ def helm_upgrade(
     config_overrides,
     version,
     timeout,
-    force
+    force,
+    atomic,
+    cleanup_on_fail
 ):
     # Clear charts and do a helm dep up before installing
     # Clearing charts is important so we don't deploy charts that
@@ -82,6 +84,10 @@ def helm_upgrade(
         cmd += ['--timeout', timeout]
     if force:
         cmd += ['--force']
+    if atomic:
+        cmd += ['--atomic']
+    if cleanup_on_fail:
+        cmd += ['--cleanup-on-fail']
     cmd += itertools.chain(*[['-f', cf] for cf in config_files])
     cmd += itertools.chain(*[['--set', v] for v in config_overrides])
     subprocess.check_call(cmd)
@@ -95,7 +101,9 @@ def deploy(
     helm_config_overrides=None,
     version=None,
     timeout=None,
-    force=False
+    force=False,
+    atomic=False,
+    cleanup_on_fail=False
 ):
     """
     Deploy a JupyterHub.
@@ -148,5 +156,7 @@ def deploy(
         helm_config_overrides,
         version,
         timeout,
-        force
+        force,
+        atomic,
+        cleanup_on_fail
     )
