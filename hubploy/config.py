@@ -9,6 +9,16 @@ import docker
 from . import gitutils
 yaml = YAML(typ='safe')
 
+class DeploymentNotFoundError(Exception):
+    def __init__(self, deployment, path, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.deployment = deployment
+        self.path = path
+
+    def __str__(self):
+        return f"deployment {self.deployment} not found at {self.path}"
+
+
 class LocalImage:
     """
     A docker image that can be built from a local filesystem source
@@ -152,12 +162,12 @@ def get_config(deployment):
     Normalize images config if it exists
     """
     deployment_path = os.path.abspath(os.path.join('deployments', deployment))
+    if not os.path.exists(deployment_path):
+        raise DeploymentNotFoundError(deployment, deployment_path)
+
     config_path = os.path.join(deployment_path, 'hubploy.yaml')
-
-    if not os.path.exists(config_path):
-        return {}
-
     with open(config_path) as f:
+        # If config_path isn't found, this will raise a FileNotFoundError with useful info
         config = yaml.load(f)
 
     if 'images' in config:

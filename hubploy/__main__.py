@@ -78,7 +78,11 @@ def main():
 
     args = argparser.parse_args()
 
-    config = hubploy.config.get_config(args.deployment)
+    try:
+        config = hubploy.config.get_config(args.deployment)
+    except hubploy.config.DeploymentNotFoundError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
 
     if args.command == 'build':
         if not args.check_registry and not args.commit_range:
