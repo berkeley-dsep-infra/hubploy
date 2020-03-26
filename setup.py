@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='hubploy',
-    version='0.1.0',
+    version='0.1.1',
     url="https://github.com/yuvipanda/hubploy",
     author="Yuvi Panda",
     packages=setuptools.find_packages(),
