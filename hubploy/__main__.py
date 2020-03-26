@@ -7,11 +7,11 @@ from hubploy import helm, auth, commitrange
 def main():
     argparser = argparse.ArgumentParser()
     subparsers = argparser.add_subparsers(dest='command')
-    build_parser = subparsers.add_parser('build', help='Build an image from given path')
+    build_parser = subparsers.add_parser('build', help='Build an image for a given deployment')
 
     build_parser.add_argument(
         'deployment',
-        help='Path to directory with dockerfile'
+        help='Name of deployment to build image of'
     )
 
     trigger_change_group = build_parser.add_mutually_exclusive_group()
