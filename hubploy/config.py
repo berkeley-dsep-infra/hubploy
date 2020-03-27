@@ -34,6 +34,10 @@ class LocalImage:
 
         Expects cwd to be inside the git repo we are operating in
         """
+        # name must not be empty
+        # FIXME: Validate name to conform to docker image name guidelines
+        if not name or name.strip() == '':
+            raise ValueError("Name of image to be built is not specified. Check hubploy.yaml of your deployment")
         self.name = name
 
         self.tag = utils.last_modified_commit(path)
