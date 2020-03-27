@@ -6,7 +6,8 @@ from ruamel.yaml import YAML
 from repo2docker.app import Repo2Docker
 import docker
 
-from . import gitutils
+
+from . import utils
 yaml = YAML(typ='safe')
 
 class DeploymentNotFoundError(Exception):
@@ -33,9 +34,13 @@ class LocalImage:
 
         Expects cwd to be inside the git repo we are operating in
         """
+        # name must not be empty
+        # FIXME: Validate name to conform to docker image name guidelines
+        if not name or name.strip() == '':
+            raise ValueError("Name of image to be built is not specified. Check hubploy.yaml of your deployment")
         self.name = name
 
-        self.tag = gitutils.last_modified_commit(path)
+        self.tag = utils.last_modified_commit(path)
         self.path = path
         self.helm_substitution_path = helm_substitution_path
         self.image_spec = f'{self.name}:{self.tag}'
@@ -48,7 +53,6 @@ class LocalImage:
         self.r2d.user_name = 'jovyan'
         self.r2d.target_repo_dir = '/srv/repo'
         self.r2d.initialize()
-
 
     @property
     def docker(self):
@@ -99,7 +103,7 @@ class LocalImage:
             # FIXME: Make this look for last modified since before beginning of commit_range
             # Otherwise, if there are more than n commits in the current PR that touch this
             # local image, we might not get any useful caches
-            yield gitutils.last_modified_commit(self.path, n=i)
+            yield utils.last_modified_commit(self.path, n=i)
 
     def fetch_parent_image(self):
         """
@@ -136,7 +140,7 @@ class LocalImage:
             return not self.exists_in_registry()
 
         if commit_range:
-            return gitutils.path_touched(self.path, commit_range=commit_range)
+            return utils.path_touched(self.path, commit_range=commit_range)
 
 
     def build(self, reuse_cache=True):
