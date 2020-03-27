@@ -9,7 +9,7 @@ import docker
 import time
 import docker.errors
 
-from hubploy import config, gitutils
+from hubploy import config, utils
 
 
 @pytest.fixture
@@ -93,15 +93,15 @@ def test_tag_generation(git_repo):
 
     with cwd(git_repo):
         image = config.LocalImage('test-image', 'image')
-        assert image.tag == gitutils.last_modified_commit('image')
+        assert image.tag == utils.last_modified_commit('image')
         # Make sure tag isn't influenced by changes outside of iamge dir
-        assert image.tag != gitutils.last_modified_commit('unrelated')
+        assert image.tag != utils.last_modified_commit('unrelated')
 
 
         # Change the Dockerfile and see that the tag changes
         commit_file(git_repo, 'image/Dockerfile', 'FROM busybox:latest')
         new_image = config.LocalImage('test-image', 'image')
-        assert new_image.tag == gitutils.last_modified_commit('image')
+        assert new_image.tag == utils.last_modified_commit('image')
         assert new_image.tag != image.tag
 
 
