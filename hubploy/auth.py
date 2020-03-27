@@ -88,8 +88,9 @@ def registry_auth_aws(deployment, project, zone, service_key):
         with open(docker_config, 'r') as f:
             config = json.load(f)
     else:
-        config = {'credHelpers': {}}
-    config['credHelpers'][registry] = 'ecr-login'
+        config = {}
+
+    config.setdefault('credHelpers', {})[registry] = 'ecr-login'
     with open(docker_config, 'w') as f:
         json.dump(config, f)
 
