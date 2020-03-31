@@ -134,6 +134,7 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
     ])
 
 
+@contextmanager
 def cluster_auth(deployment):
     """
     Do appropriate cluster authentication for given deployment
@@ -144,15 +145,15 @@ def cluster_auth(deployment):
         cluster = config['cluster']
         provider = cluster.get('provider')
         if provider == 'gcloud':
-            cluster_auth_gcloud(
+            yield from cluster_auth_gcloud(
                 deployment, **cluster['gcloud']
             )
         elif provider == 'aws':
-            cluster_auth_aws(
+            yield from cluster_auth_aws(
                 deployment, **cluster['aws']
             )
         elif provider == 'azure':
-            cluster_auth_azure(
+            yield from cluster_auth_azure(
                 deployment, **cluster['azure']
             )
         else:
@@ -182,6 +183,8 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
+    yield
+
 
 def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     """
@@ -198,8 +201,18 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         os.mkdir(cred_dir)
     shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                           '--name', cluster, '--region', zone])
+    # Set env variable for credential file location
+    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+
+    try:
+        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
+                               '--name', cluster, '--region', zone])
+
+        yield
+
+    finally:
+        # Unset env variable for credential file location
+        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
@@ -241,6 +254,6 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--resource-group', resource_group
     ])
 
-
+    yield
 
 

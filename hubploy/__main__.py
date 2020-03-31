@@ -102,8 +102,8 @@ def main():
                     image.push()
 
     elif args.command == 'deploy':
-        auth.cluster_auth(args.deployment)
-        helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force, args.atomic, args.cleanup_on_fail)
+        with auth.cluster_auth(args.deployment):
+            helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force, args.atomic, args.cleanup_on_fail)
 
 if __name__ == '__main__':
     main()
