@@ -79,12 +79,6 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-    # move credentials to standard location
-    cred_dir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(cred_dir):
-        os.mkdir(cred_dir)
-    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
-
 
     # Set env variable for credential file location
     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
@@ -216,10 +210,6 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
-    cred_dir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(cred_dir):
-        os.mkdir(cred_dir)
-    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
     # Set env variable for credential file location
     os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
