@@ -71,6 +71,8 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
+
+    # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
@@ -206,7 +208,8 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    # move credentials to standard location
+
+    # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
