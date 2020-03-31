@@ -7,6 +7,7 @@ import subprocess
 import shutil
 
 from hubploy.config import get_config
+from contextlib import contextmanager
 
 from ruamel.yaml import YAML
 yaml = YAML(typ='rt')
