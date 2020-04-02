@@ -57,3 +57,12 @@ Deploying a change
          Merge-Prod-PR --> Deploy-To-Prod[CI deploys prod hub]
          Deploy-To-Prod --> Happy-Users[Users are happy!]
       end
+
+Known Limitations
+=================
+
+#. hubploy requires you already have infrastructure set up - Kubernetes
+   cluster, persistent home directories, image repositories, etc. There
+   are `ongoing efforts <https://github.com/pangeo-data/terraform-deploy>`_ to fix
+   this, however.
+#. More documentation and tests, as always!
