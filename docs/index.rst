@@ -7,13 +7,34 @@ repository structure for continuously deploying JupyterHubs on Kubernetes (with
 `Zero to JupyterHub <https://z2jh.jupyter.org>`_).
 
 
-Deployment workflow
-===================
+Hubploy workflow
+================
 
-Every change to your hub (image changes, config changes, etc) *must*
-flow through a git repo set up with continuous deployment. The following
-chart describes the process of deploying a change to your users on the
-production hub.
+**Every change to your hub configuration must be made via a pull request
+to your git repository**. Guided by principles of `continuous deliver <https://continuousdelivery.com/>`_,
+this informs hubploy's design.
+
+Components
+----------
+
+The following components make up a hubploy based deployment workflow:
+
+#. A deployment *git repository*, containing *all* the configuration for your
+   JupyterHubs. This includes image configuration, zero-to-jupyterhub configuration,
+   and any secrets if necessary. hubploy is designed to support many different
+   hubs deploying to different cloud providers from the same repository.
+#. A *staging hub* for each JupyterHub in the git repo. End users rarely use
+   this hub, and it is primarily used for testing by devs. The ``staging`` branch
+   in the git repo contains the config for these hubs.
+#. A *prod(uction) hub* for each JupyterHub in the git repo. End users actively
+   use this hub, and we try to have minimal downtime here. The ``prod`` branch
+   in the git repo contains the config for these hubs. However, since we want
+   prod and staging to be as close as possible, the *prod branch match the
+   staging branch completely* under normal circumstances. The only commits that
+   can be in prod but not in staging are merge commits.
+
+Deploying a change
+------------------
 
 .. mermaid::
 
@@ -36,16 +57,3 @@ production hub.
          Merge-Prod-PR --> Deploy-To-Prod[CI deploys prod hub]
          Deploy-To-Prod --> Happy-Users[Users are happy!]
       end
-
-Hubploy features
-================
-HubPloy has two major components:
-
-#. An :ref:`image-builder` that builds images from subpaths of git repositories
-   only when needed.
-#. A `helm <https://helm.sh>`_ wrapper that deploys a helm chart when
-   required.
-
-HubPloy tries to be `level triggered <https://hackernoon.com/level-triggering-and-reconciliation-in-kubernetes-1f17fe30333d>`_
-rather than edge triggered wherever possible, for simpler code & reliable
-deploys.
