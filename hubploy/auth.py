@@ -81,9 +81,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-    original_credential_file_loc = ""
-    if os.getenv("AWS_SHARED_CREDENTIALS_FILE"):
-        original_credential_file_loc = os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+    original_credential_file_loc = get_env_var_if_exists("AWS_SHARED_CREDENTIALS_FILE")
 
     try:
         # Set env variable for credential file location
@@ -211,15 +209,14 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
+    original_kubeconfig_file_loc = get_env_var_if_exists("KUBECONFIG")
 
     # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
 
-    original_credential_file_loc = ""
-    if os.getenv("AWS_SHARED_CREDENTIALS_FILE"):
-        original_credential_file_loc = os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+    original_credential_file_loc = get_env_var_if_exists("AWS_SHARED_CREDENTIALS_FILE")
 
     try:
         # Set env variable for credential file location
@@ -278,3 +275,13 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     yield
 
 
+def get_env_var_if_exists(env_var):
+    """
+    Check if environment variable exists
+    If so, return it
+    If not, return an empty string
+    """
+
+    if os.getenv(env_var):
+        return os.environ[env_var]
+    return ""
