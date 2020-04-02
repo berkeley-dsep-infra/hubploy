@@ -81,11 +81,9 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-
-    # Set env variable for credential file location
-    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
     try:
+        # Set env variable for credential file location
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
         registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
         # Requires amazon-ecr-credential-helper to already be installed
@@ -214,10 +212,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         'deployments', deployment, 'secrets', service_key
     )
 
-    # Set env variable for credential file location
-    os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
     try:
+        # Set env variable for credential file location
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+
         subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                                '--name', cluster, '--region', zone])
 
