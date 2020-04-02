@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import shutil
+import tempfile
 
 from hubploy.config import get_config
 from contextlib import contextmanager
@@ -216,11 +217,16 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         'deployments', deployment, 'secrets', service_key
     )
 
+    # Temporarily kubeconfig file
+    temp_kube_file = tempfile.NamedTemporaryFile()
+
     original_credential_file_loc = get_env_var_if_exists("AWS_SHARED_CREDENTIALS_FILE")
 
     try:
+
         # Set env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+        os.environ["KUBECONFIG"] = temp_kube_file.name
 
         subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                                '--name', cluster, '--region', zone])
@@ -231,6 +237,11 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         # Unset env variable for credential file location
         del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = original_credential_file_loc
+
+        # Unset env variable for kubeconfig file location
+        # The line below throws a KeyError: 'KUBECONFIG'
+        #del os.environ["KUBECONFIG"]
+        os.environ["KUBECONFIG"] = original_kubeconfig_file_loc
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
