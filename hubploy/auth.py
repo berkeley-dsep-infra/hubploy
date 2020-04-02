@@ -81,6 +81,10 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
+    original_credential_file_loc = ""
+    if os.getenv("AWS_SHARED_CREDENTIALS_FILE"):
+        original_credential_file_loc = os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+
     try:
         # Set env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
@@ -106,6 +110,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
     finally:
         # Unset env variable for credential file location
         del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = original_credential_file_loc
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
@@ -212,6 +217,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
         'deployments', deployment, 'secrets', service_key
     )
 
+    original_credential_file_loc = ""
+    if os.getenv("AWS_SHARED_CREDENTIALS_FILE"):
+        original_credential_file_loc = os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+
     try:
         # Set env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
@@ -224,6 +233,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     finally:
         # Unset env variable for credential file location
         del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = original_credential_file_loc
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
