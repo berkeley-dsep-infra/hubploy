@@ -210,7 +210,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    original_kubeconfig_file_loc = get_env_var_if_exists("KUBECONFIG")
+    
 
     # Get credentials from standard location
     service_key_path = os.path.join(
@@ -220,6 +220,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     # Temporarily kubeconfig file
     temp_kube_file = tempfile.NamedTemporaryFile()
 
+    original_kubeconfig_file_loc = get_env_var_if_exists("KUBECONFIG")
     original_credential_file_loc = get_env_var_if_exists("AWS_SHARED_CREDENTIALS_FILE")
 
     try:
