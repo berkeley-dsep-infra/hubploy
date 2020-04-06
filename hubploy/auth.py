@@ -108,8 +108,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
     finally:
         # Unset env variable for credential file location
-        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = original_credential_file_loc
+        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
@@ -236,13 +235,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     finally:
         # Unset env variable for credential file location
-        del os.environ["AWS_SHARED_CREDENTIALS_FILE"]
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = original_credential_file_loc
+        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
         # Unset env variable for kubeconfig file location
-        # The line below throws a KeyError: 'KUBECONFIG'
-        #del os.environ["KUBECONFIG"]
-        os.environ["KUBECONFIG"] = original_kubeconfig_file_loc
+        unset_env_var("KUBECONFIG", original_kubeconfig_file_loc)
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
@@ -286,3 +282,13 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
 
     yield
 
+def unset_env_var(env_var, old_env_var_value):
+    """
+    If the old environment variable's value exists, replace the current one with the old one
+    If the old environment variable's value does not exist, delete the current one
+    """
+
+    if (old_env_var_value != ""):
+            os.environ[env_var] = old_env_var_value
+    else:
+        del os.environ[env_var]
