@@ -82,7 +82,7 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", "")
+    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
     try:
         # Set env variable for credential file location
@@ -219,8 +219,8 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     # Temporarily kubeconfig file
     temp_kube_file = tempfile.NamedTemporaryFile()
 
-    original_kubeconfig_file_loc = os.environ.get("KUBECONFIG", "")
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", "")
+    original_kubeconfig_file_loc = os.environ.get("KUBECONFIG", None)
+    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
     try:
 
@@ -288,7 +288,7 @@ def unset_env_var(env_var, old_env_var_value):
     If the old environment variable's value does not exist, delete the current one
     """
 
-    if (old_env_var_value != ""):
-            os.environ[env_var] = old_env_var_value
-    else:
-        del os.environ[env_var]
+    del os.environ[env_var]
+    if (old_env_var_value is not None):
+        os.environ[env_var] = old_env_var_value
+
