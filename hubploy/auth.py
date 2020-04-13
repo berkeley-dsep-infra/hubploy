@@ -161,21 +161,31 @@ def cluster_auth(deployment):
     if 'cluster' in config:
         cluster = config['cluster']
         provider = cluster.get('provider')
-        if provider == 'gcloud':
-            yield from cluster_auth_gcloud(
-                deployment, **cluster['gcloud']
-            )
-        elif provider == 'aws':
-            yield from cluster_auth_aws(
-                deployment, **cluster['aws']
-            )
-        elif provider == 'azure':
-            yield from cluster_auth_azure(
-                deployment, **cluster['azure']
-            )
-        else:
-            raise ValueError(
-                f'Unknown provider {provider} found in hubploy.yaml')
+
+        # Temporarily kubeconfig file
+        temp_kubeconfig = tempfile.NamedTemporaryFile()
+        orig_kubeconfig = os.environ.get("KUBECONFIG", None)
+
+        try:
+            os.environ["KUBECONFIG"] = temp_kubeconfig.name
+
+            if provider == 'gcloud':
+                yield from cluster_auth_gcloud(
+                    deployment, **cluster['gcloud']
+                )
+            elif provider == 'aws':
+                yield from cluster_auth_aws(
+                    deployment, **cluster['aws']
+                )
+            elif provider == 'azure':
+                yield from cluster_auth_azure(
+                    deployment, **cluster['azure']
+                )
+            else:
+                raise ValueError(
+                    f'Unknown provider {provider} found in hubploy.yaml')
+        finally:
+            unset_env_var("KUBECONFIG", orig_kubeconfig)
 
 
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
@@ -209,24 +219,17 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    
-
     # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
 
-    # Temporarily kubeconfig file
-    temp_kube_file = tempfile.NamedTemporaryFile()
-
-    original_kubeconfig_file_loc = os.environ.get("KUBECONFIG", None)
     original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
     try:
 
         # Set env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-        os.environ["KUBECONFIG"] = temp_kube_file.name
 
         subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                                '--name', cluster, '--region', zone])
@@ -236,9 +239,6 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     finally:
         # Unset env variable for credential file location
         unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
-
-        # Unset env variable for kubeconfig file location
-        unset_env_var("KUBECONFIG", original_kubeconfig_file_loc)
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
