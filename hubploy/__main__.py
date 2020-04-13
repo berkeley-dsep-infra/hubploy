@@ -92,18 +92,17 @@ def main():
             print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
             sys.exit(1)
 
-        if args.push or args.check_registry:
-            auth.registry_auth(args.deployment)
+        with auth.registry_auth(args.deployment, args.push, args.check_registry):
 
-        for image in config.get('images', {}).get('images', {}):
-            if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
-                image.build(not args.no_cache)
-                if args.push:
-                    image.push()
+            for image in config.get('images', {}).get('images', {}):
+                if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
+                    image.build(not args.no_cache)
+                    if args.push:
+                        image.push()
 
     elif args.command == 'deploy':
-        auth.cluster_auth(args.deployment)
-        helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force, args.atomic, args.cleanup_on_fail)
+        with auth.cluster_auth(args.deployment):
+            helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force, args.atomic, args.cleanup_on_fail)
 
 if __name__ == '__main__':
     main()

@@ -5,37 +5,43 @@ import json
 import os
 import subprocess
 import shutil
+import tempfile
 
 from hubploy.config import get_config
+from contextlib import contextmanager
 
 from ruamel.yaml import YAML
 yaml = YAML(typ='rt')
 
 
-def registry_auth(deployment):
+@contextmanager
+def registry_auth(deployment, push, check_registry):
     """
     Do appropriate registry authentication for given deployment
     """
-    config = get_config(deployment)
 
-    if 'images' in config and 'registry' in config['images']:
-        registry = config['images']['registry']
-        provider = registry.get('provider')
-        if provider == 'gcloud':
-            registry_auth_gcloud(
-                deployment, **registry['gcloud']
-            )
-        elif provider == 'aws':
-            registry_auth_aws(
-                deployment, **registry['aws']
-            )
-        elif provider == 'azure':
-            registry_auth_azure(
-                deployment, **registry['azure']
-            )
-        else:
-            raise ValueError(
-                f'Unknown provider {provider} found in hubploy.yaml')
+    if push or check_registry:
+
+        config = get_config(deployment)
+
+        if 'images' in config and 'registry' in config['images']:
+            registry = config['images']['registry']
+            provider = registry.get('provider')
+            if provider == 'gcloud':
+                yield from registry_auth_gcloud(
+                    deployment, **registry['gcloud']
+                )
+            elif provider == 'aws':
+                yield from registry_auth_aws(
+                    deployment, **registry['aws']
+                )
+            elif provider == 'azure':
+                yield from registry_auth_azure(
+                    deployment, **registry['azure']
+                )
+            else:
+                raise ValueError(
+                    f'Unknown provider {provider} found in hubploy.yaml')
 
 
 def registry_auth_gcloud(deployment, project, service_key):
@@ -57,6 +63,8 @@ def registry_auth_gcloud(deployment, project, service_key):
         'gcloud', 'auth', 'configure-docker'
     ])
 
+    yield
+
 
 def registry_auth_aws(deployment, project, zone, service_key):
     """
@@ -64,6 +72,8 @@ def registry_auth_aws(deployment, project, zone, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
+
+    # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
@@ -72,28 +82,33 @@ def registry_auth_aws(deployment, project, zone, service_key):
         raise FileNotFoundError(
             f'The service_key file {service_key_path} does not exist')
 
-    # move credentials to standard location
-    cred_dir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(cred_dir):
-        os.mkdir(cred_dir)
-    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
+    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
-    registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
-    # amazon-ecr-credential-helper installed in .circleci/config.yaml
-    # this adds necessary line to authenticate docker with ecr
-    docker_config_dir = os.path.expanduser('~/.docker')
-    os.makedirs(docker_config_dir, exist_ok=True)
-    docker_config = os.path.join(docker_config_dir, 'config.json')
-    if os.path.exists(docker_config):
-        with open(docker_config, 'r') as f:
-            config = json.load(f)
-    else:
-        config = {}
+    try:
+        # Set env variable for credential file location
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-    config.setdefault('credHelpers', {})[registry] = 'ecr-login'
-    with open(docker_config, 'w') as f:
-        json.dump(config, f)
+        registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+        # Requires amazon-ecr-credential-helper to already be installed
+        # this adds necessary line to authenticate docker with ecr
+        docker_config_dir = os.path.expanduser('~/.docker')
+        os.makedirs(docker_config_dir, exist_ok=True)
+        docker_config = os.path.join(docker_config_dir, 'config.json')
+        if os.path.exists(docker_config):
+            with open(docker_config, 'r') as f:
+                config = json.load(f)
+        else:
+            config = {}
 
+        config.setdefault('credHelpers', {})[registry] = 'ecr-login'
+        with open(docker_config, 'w') as f:
+            json.dump(config, f)
+
+        yield
+
+    finally:
+        # Unset env variable for credential file location
+        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
@@ -133,7 +148,10 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
         '--name', registry
     ])
 
+    yield
 
+
+@contextmanager
 def cluster_auth(deployment):
     """
     Do appropriate cluster authentication for given deployment
@@ -144,15 +162,15 @@ def cluster_auth(deployment):
         cluster = config['cluster']
         provider = cluster.get('provider')
         if provider == 'gcloud':
-            cluster_auth_gcloud(
+            yield from cluster_auth_gcloud(
                 deployment, **cluster['gcloud']
             )
         elif provider == 'aws':
-            cluster_auth_aws(
+            yield from cluster_auth_aws(
                 deployment, **cluster['aws']
             )
         elif provider == 'azure':
-            cluster_auth_azure(
+            yield from cluster_auth_azure(
                 deployment, **cluster['azure']
             )
         else:
@@ -182,6 +200,8 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
         'get-credentials', cluster
     ])
 
+    yield
+
 
 def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     """
@@ -189,17 +209,36 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    # move credentials to standard location
+    
+
+    # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
-    cred_dir = os.path.expanduser('~/.aws')
-    if not os.path.isdir(cred_dir):
-        os.mkdir(cred_dir)
-    shutil.copyfile(service_key_path, os.path.join(cred_dir, 'credentials'))
 
-    subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                           '--name', cluster, '--region', zone])
+    # Temporarily kubeconfig file
+    temp_kube_file = tempfile.NamedTemporaryFile()
+
+    original_kubeconfig_file_loc = os.environ.get("KUBECONFIG", None)
+    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+
+    try:
+
+        # Set env variable for credential file location
+        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+        os.environ["KUBECONFIG"] = temp_kube_file.name
+
+        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
+                               '--name', cluster, '--region', zone])
+
+        yield
+
+    finally:
+        # Unset env variable for credential file location
+        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+
+        # Unset env variable for kubeconfig file location
+        unset_env_var("KUBECONFIG", original_kubeconfig_file_loc)
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
@@ -241,6 +280,15 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         '--resource-group', resource_group
     ])
 
+    yield
 
+def unset_env_var(env_var, old_env_var_value):
+    """
+    If the old environment variable's value exists, replace the current one with the old one
+    If the old environment variable's value does not exist, delete the current one
+    """
 
+    del os.environ[env_var]
+    if (old_env_var_value is not None):
+        os.environ[env_var] = old_env_var_value
 
