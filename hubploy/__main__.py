@@ -58,6 +58,10 @@ def main():
         action='append',
     )
     deploy_parser.add_argument(
+        '--set-string',
+        action='append',
+    )
+    deploy_parser.add_argument(
         '--version',
     )
     deploy_parser.add_argument(
@@ -102,7 +106,19 @@ def main():
 
     elif args.command == 'deploy':
         with auth.cluster_auth(args.deployment):
-            helm.deploy(args.deployment, args.chart, args.environment, args.namespace, args.set, args.version, args.timeout, args.force, args.atomic, args.cleanup_on_fail)
+            helm.deploy(
+                args.deployment,
+                args.chart,
+                args.environment,
+                args.namespace,
+                args.set,
+                args.set_string,
+                args.version,
+                args.timeout,
+                args.force,
+                args.atomic,
+                args.cleanup_on_fail,
+            )
 
 if __name__ == '__main__':
     main()
