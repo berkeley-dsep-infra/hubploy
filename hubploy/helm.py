@@ -34,7 +34,8 @@ def helm_upgrade(
     namespace,
     chart,
     config_files,
-    config_overrides,
+    config_overrides_implicit,
+    config_overrides_string,
     version,
     timeout,
     force,
@@ -91,7 +92,8 @@ def helm_upgrade(
     if cleanup_on_fail:
         cmd += ['--cleanup-on-fail']
     cmd += itertools.chain(*[['-f', cf] for cf in config_files])
-    cmd += itertools.chain(*[['--set', v] for v in config_overrides])
+    cmd += itertools.chain(*[['--set', v] for v in config_overrides_implicit])
+    cmd += itertools.chain(*[['--set-string', v] for v in config_overrides_string])
     subprocess.check_call(cmd)
 
 
@@ -100,7 +102,8 @@ def deploy(
     chart,
     environment,
     namespace=None,
-    helm_config_overrides=None,
+    helm_config_overrides_implicit=None,
+    helm_config_overrides_string=None,
     version=None,
     timeout=None,
     force=False,
@@ -127,8 +130,10 @@ def deploy(
     `jupyterhub.singleuser.image.tag` will be automatically set to this image
     tag.
     """
-    if helm_config_overrides is None:
-        helm_config_overrides = []
+    if helm_config_overrides_implicit is None:
+        helm_config_overrides_implicit = []
+    if helm_config_overrides_string is None:
+        helm_config_overrides_string = []
 
     config = get_config(deployment)
 
@@ -147,18 +152,19 @@ def deploy(
         # config paths where we set image tags and names.
         # We default to one sublevel, but we can do multiple levels.
         # With the PANGEO chart, we this could be set to `pangeo.jupyterhub.singleuser.image`
-        helm_config_overrides.append(f'{image.helm_substitution_path}.tag={image.tag}')
-        helm_config_overrides.append(f'{image.helm_substitution_path}.name={image.name}')
+        helm_config_overrides_string.append(f'{image.helm_substitution_path}.tag={image.tag}')
+        helm_config_overrides_string.append(f'{image.helm_substitution_path}.name={image.name}')
 
     helm_upgrade(
         name,
         namespace,
         chart,
         helm_config_files,
-        helm_config_overrides,
+        helm_config_overrides_implicit,
+        helm_config_overrides_string,
         version,
         timeout,
         force,
         atomic,
-        cleanup_on_fail
+        cleanup_on_fail,
     )
