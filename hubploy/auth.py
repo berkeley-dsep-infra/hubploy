@@ -69,49 +69,62 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
-def registry_auth_aws(deployment, project, zone, service_key):
+def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = None):
     """
     Setup AWS authentication to ECR container registry
 
     This changes *global machine state* on where docker can push to!
     """
 
-    # Get credentials from standard location
-    service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
-    )
+    if not service_key and not ecr_role:
+        raise Exception('AWS authentication requires either a service key or the use of roles')
 
-    if not os.path.isfile(service_key_path):
-        raise FileNotFoundError(
-            f'The service_key file {service_key_path} does not exist')
+    # TODO: comment...
+    if service_key:
+        # Get credentials from standard location
+        service_key_path = os.path.join(
+            'deployments', deployment, 'secrets', service_key
+        )
 
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+        if not os.path.isfile(service_key_path):
+            raise FileNotFoundError(
+                f'The service_key file {service_key_path} does not exist')
 
-    try:
+        original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+
         # Set env variable for credential file location
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-        registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
-        # Requires amazon-ecr-credential-helper to already be installed
-        # this adds necessary line to authenticate docker with ecr
-        docker_config_dir = os.path.expanduser('~/.docker')
-        os.makedirs(docker_config_dir, exist_ok=True)
-        docker_config = os.path.join(docker_config_dir, 'config.json')
-        if os.path.exists(docker_config):
-            with open(docker_config, 'r') as f:
-                config = json.load(f)
-        else:
-            config = {}
+        try:
 
-        config.setdefault('credHelpers', {})[registry] = 'ecr-login'
-        with open(docker_config, 'w') as f:
-            json.dump(config, f)
+            registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+            # TODO: fix this comment
+            # Requires amazon-ecr-credential-helper to already be installed
+            # this adds necessary line to authenticate docker with ecr
+            docker_config_dir = os.path.expanduser('~/.docker')
+            os.makedirs(docker_config_dir, exist_ok=True)
+            docker_config = os.path.join(docker_config_dir, 'config.json')
+            if os.path.exists(docker_config):
+                with open(docker_config, 'r') as f:
+                    config = json.load(f)
+            else:
+                config = {}
 
-        yield
+            config.setdefault('credHelpers', {})[registry] = 'ecr-login'
+            with open(docker_config, 'w') as f:
+                json.dump(config, f)
 
-    finally:
-        # Unset env variable for credential file location
-        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+            yield
+
+        finally:
+            if service_key:
+                # Unset env variable for credential file location
+                unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+
+    if ecr_role:
+        # TODO: comment...
+        subprocess.check_call(['awsudo', ecr_role])
+
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
