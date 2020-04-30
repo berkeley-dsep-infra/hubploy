@@ -42,7 +42,10 @@ def registry_auth(deployment, push, check_registry):
             else:
                 raise ValueError(
                     f'Unknown provider {provider} found in hubploy.yaml')
-
+    else:
+        # We actually don't need to auth, but we are yielding anyway
+        # contextlib.contextmanager does not like it when you don't yield
+        yield
 
 def registry_auth_gcloud(deployment, project, service_key):
     """
