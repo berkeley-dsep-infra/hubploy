@@ -122,8 +122,11 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
                 unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
     if ecr_role:
-        # TODO: comment...
-        subprocess.check_call(['awsudo', ecr_role])
+        subprocess.check_call([
+            'aws', 'assume-role',
+            f'--role-arn={ecr_role}',
+            f'--role-session-name=push-docker'
+        ])
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
