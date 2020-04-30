@@ -77,9 +77,8 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
     """
 
     if not service_key and not ecr_role:
-        raise Exception('AWS authentication requires either a service key or the use of roles')
+        raise Exception('AWS authentication requires either a service key or the use of a role')
 
-    # TODO: comment...
     if service_key:
         # Get credentials from standard location
         service_key_path = os.path.join(
@@ -125,7 +124,7 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
         subprocess.check_call([
             'aws', 'assume-role',
             f'--role-arn={ecr_role}',
-            f'--role-session-name=push-docker'
+            '--role-session-name=docker'
         ])
 
 
@@ -232,32 +231,44 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     yield
 
 
-def cluster_auth_aws(deployment, project, cluster, zone, service_key):
+def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, eks_role = None):
     """
     Setup AWS authentication with service_key
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    # Get credentials from standard location
-    service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
-    )
 
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+    if not service_key and not eks_role:
+        raise Exception('AWS authentication requires either a service key or the use of a role')
 
-    try:
+    if service_key:
+        # Get credentials from standard location
+        service_key_path = os.path.join(
+            'deployments', deployment, 'secrets', service_key
+        )
 
-        # Set env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+        original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
-        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                               '--name', cluster, '--region', zone])
+        try:
 
-        yield
+            # Set env variable for credential file location
+            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-    finally:
-        # Unset env variable for credential file location
-        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+            subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
+                                   '--name', cluster, '--region', zone])
+
+            yield
+
+        finally:
+            # Unset env variable for credential file location
+            unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+
+    if eks_role:
+        subprocess.check_call([
+            'aws', 'assume-role',
+            f'--role-arn={eks_role}',
+            '--role-session-name=cluster'
+        ])
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
