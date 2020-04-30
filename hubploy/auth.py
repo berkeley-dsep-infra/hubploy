@@ -122,7 +122,7 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
 
     if ecr_role:
         subprocess.check_call([
-            'aws', 'assume-role',
+            'aws', 'sts', 'assume-role',
             f'--role-arn={ecr_role}',
             '--role-session-name=docker'
         ])
@@ -265,7 +265,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, eks
 
     if eks_role:
         subprocess.check_call([
-            'aws', 'assume-role',
+            'aws', 'sts', 'assume-role',
             f'--role-arn={eks_role}',
             '--role-session-name=cluster'
         ])
