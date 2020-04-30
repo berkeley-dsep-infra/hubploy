@@ -127,6 +127,8 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
             '--role-session-name=docker'
         ])
 
+        yield
+
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
@@ -269,6 +271,8 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, eks
             f'--role-arn={eks_role}',
             '--role-session-name=cluster'
         ])
+
+        yield
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
