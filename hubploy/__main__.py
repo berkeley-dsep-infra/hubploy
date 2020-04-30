@@ -37,6 +37,13 @@ def main():
         help="Don't pull previous image to re-use cache from"
     )
 
+    build_parser.add_argument(
+        '--image',
+        # FIXME: Have a friendlier way to reference this
+        help='Fully qualified docker image names to build',
+        action='append'
+    )
+
     deploy_parser = subparsers.add_parser('deploy', help='Deploy a chart to the given environment')
 
     deploy_parser.add_argument(
@@ -98,8 +105,17 @@ def main():
 
         with auth.registry_auth(args.deployment, args.push, args.check_registry):
 
-            for image in config.get('images', {}).get('images', {}):
+            all_images = config.get('images', {}).get('images', {})
+
+            if args.image:
+                build_images = [i for i in all_images if i.name in args.image]
+            else:
+                build_images = all_images
+
+            print(f"Building {len(build_images)} images")
+            for image in build_images:
                 if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
+                    print(f"Building image {image.name}")
                     image.build(not args.no_cache)
                     if args.push:
                         image.push()
