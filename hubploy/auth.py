@@ -69,14 +69,14 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
-def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = None):
+def registry_auth_aws(deployment, project, zone, service_key = None, role = None):
     """
     Setup AWS authentication to ECR container registry
 
     This changes *global machine state* on where docker can push to!
     """
 
-    if not service_key and not ecr_role:
+    if not service_key and not role:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
     if service_key:
@@ -112,21 +112,19 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
             with open(docker_config, 'w') as f:
                 json.dump(config, f)
 
-            yield
-
         finally:
             if service_key:
                 # Unset env variable for credential file location
                 unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
-    if ecr_role:
+    if role:
         subprocess.check_call([
             'aws', 'sts', 'assume-role',
             f'--role-arn={ecr_role}',
             '--role-session-name=docker'
         ])
 
-        yield
+     yield
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -232,14 +230,14 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     yield
 
 
-def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, eks_role = None):
+def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, role = None):
     """
     Setup AWS authentication with service_key
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
 
-    if not service_key and not eks_role:
+    if not service_key and not role:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
     if service_key:
@@ -257,20 +255,18 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, eks
             subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
                                    '--name', cluster, '--region', zone])
 
-            yield
-
         finally:
             # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
-    if eks_role:
+    if role:
         subprocess.check_call([
             'aws', 'sts', 'assume-role',
             f'--role-arn={eks_role}',
             '--role-session-name=cluster'
         ])
 
-        yield
+    yield
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
