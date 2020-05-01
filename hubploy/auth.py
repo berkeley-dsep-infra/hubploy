@@ -69,7 +69,7 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
-def registry_auth_aws(deployment, project, zone, service_key = None, role = None):
+def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
     """
     Setup AWS authentication to ECR container registry
 
@@ -230,7 +230,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     yield
 
 
-def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, role = None):
+def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=None):
     """
     Setup AWS authentication with service_key
 
