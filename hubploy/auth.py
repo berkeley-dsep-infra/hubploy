@@ -277,7 +277,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
         yield
 
     finally:
-        if service_role:
+        if service_key:
             # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
