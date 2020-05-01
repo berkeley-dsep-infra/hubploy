@@ -95,7 +95,6 @@ def registry_auth_aws(deployment, project, zone, service_key = None, ecr_role = 
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
         try:
-
             registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
             # TODO: fix this comment
             # Requires amazon-ecr-credential-helper to already be installed
@@ -252,7 +251,6 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key = None, eks
         original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
         try:
-
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
