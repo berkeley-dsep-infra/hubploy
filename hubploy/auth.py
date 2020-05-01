@@ -79,6 +79,8 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
     if not service_key and not role:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
+    registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+
     if service_key:
         # Get credentials from standard location
         service_key_path = os.path.join(
@@ -95,7 +97,6 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
         os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
         try:
-            registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
             # TODO: fix this comment
             # Requires amazon-ecr-credential-helper to already be installed
             # this adds necessary line to authenticate docker with ecr
@@ -120,11 +121,11 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
     if role:
         subprocess.check_call([
             'aws', 'sts', 'assume-role',
-            f'--role-arn={ecr_role}',
+            f'--role-arn={role}',
             '--role-session-name=docker'
         ])
 
-     yield
+    yield
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -240,6 +241,12 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
     if not service_key and not role:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
+    def update_kubeconfig():
+        subprocess.check_call([
+            'aws', 'eks', 'update-kubeconfig',
+            '--name', cluster, '--region', zone
+        ])
+
     if service_key:
         # Get credentials from standard location
         service_key_path = os.path.join(
@@ -252,8 +259,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-            subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                                   '--name', cluster, '--region', zone])
+            update_kubeconfig()
 
         finally:
             # Unset env variable for credential file location
@@ -262,9 +268,11 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
     if role:
         subprocess.check_call([
             'aws', 'sts', 'assume-role',
-            f'--role-arn={eks_role}',
+            f'--role-arn={role}',
             '--role-session-name=cluster'
         ])
+
+        update_kubeconfig()
 
     yield
 
