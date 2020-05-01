@@ -81,22 +81,22 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
 
     registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
 
-    if service_key:
-        # Get credentials from standard location
-        service_key_path = os.path.join(
-            'deployments', deployment, 'secrets', service_key
-        )
+    try:
+        if service_key:
+            # Get credentials from standard location
+            service_key_path = os.path.join(
+                'deployments', deployment, 'secrets', service_key
+            )
 
-        if not os.path.isfile(service_key_path):
-            raise FileNotFoundError(
-                f'The service_key file {service_key_path} does not exist')
+            if not os.path.isfile(service_key_path):
+                raise FileNotFoundError(
+                    f'The service_key file {service_key_path} does not exist')
 
-        original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
-        # Set env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+            # Set env variable for credential file location
+            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-        try:
             # TODO: fix this comment
             # Requires amazon-ecr-credential-helper to already be installed
             # this adds necessary line to authenticate docker with ecr
@@ -113,19 +113,23 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             with open(docker_config, 'w') as f:
                 json.dump(config, f)
 
-        finally:
-            if service_key:
-                # Unset env variable for credential file location
-                unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+        if role:
+            subprocess.check_call([
+                'aws', 'sts', 'assume-role',
+                f'--role-arn={role}',
+                '--role-session-name=docker'
+            ])
 
-    if role:
-        subprocess.check_call([
-            'aws', 'sts', 'assume-role',
-            f'--role-arn={role}',
-            '--role-session-name=docker'
-        ])
+        yield
 
-    yield
+    finally:
+        if service_key:
+            # Unset env variable for credential file location
+            unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+
+        if role:
+            pass
+            # drop perms here???
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -243,38 +247,43 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
 
     def update_kubeconfig():
         subprocess.check_call([
-            'aws', 'eks', 'update-kubeconfig',
-            '--name', cluster, '--region', zone
-        ])
+        'aws', 'eks', 'update-kubeconfig',
+        '--name', cluster, '--region', zone
+    ])
 
-    if service_key:
-        # Get credentials from standard location
-        service_key_path = os.path.join(
-            'deployments', deployment, 'secrets', service_key
-        )
+    try:
+        if service_key:
+            # Get credentials from standard location
+            service_key_path = os.path.join(
+                'deployments', deployment, 'secrets', service_key
+            )
 
-        original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
-        try:
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
             update_kubeconfig()
 
-        finally:
+        if role:
+            subprocess.check_call([
+                'aws', 'sts', 'assume-role',
+                f'--role-arn={role}',
+                '--role-session-name=cluster'
+            ])
+
+            update_kubeconfig()
+
+        yield
+
+    finally:
+        if service_role:
             # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
-    if role:
-        subprocess.check_call([
-            'aws', 'sts', 'assume-role',
-            f'--role-arn={role}',
-            '--role-session-name=cluster'
-        ])
-
-        update_kubeconfig()
-
-    yield
+        if role:
+            pass
+            # drop perms here???
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
