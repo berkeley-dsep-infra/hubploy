@@ -114,17 +114,20 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
                 json.dump(config, f)
 
         if role:
+            # this doesn't come back in the sts client response
+            role_session_name = 'registry'
+
             sts_client = boto3.client('sts')
             assumed_role_object = sts_client.assume_role(
                 RoleArn = role,
-                RoleSessionName = 'registry'
+                RoleSessionName = role_session_name
             )
 
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            os.environ['AWS_ROLE_SESSION_NAME'] = creds['RoleSessionName']
+            os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
 
         yield
 
@@ -278,17 +281,20 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             update_kubeconfig()
 
         if role:
+            # this doesn't come back in the sts client response
+            role_session_name = 'cluster'
+
             sts_client = boto3.client('sts')
             assumed_role_object = sts_client.assume_role(
                 RoleArn = role,
-                RoleSessionName = 'cluster'
+                RoleSessionName = role_session_name
             )
 
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            os.environ['AWS_ROLE_SESSION_NAME'] = creds['RoleSessionName']
+            os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
 
             #update_kubeconfig()
 
