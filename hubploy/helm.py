@@ -52,18 +52,15 @@ def helm_upgrade(
             HELM_EXECUTABLE, 'dep', 'up'
         ], cwd=chart)
 
-    role_assumed = bool(os.environ.get('EKS_ROLE_ASSUMED', False))
-
     # Create namespace explicitly, since helm3 removes support for it
     # See https://github.com/helm/helm/issues/6794
     # helm2 only creates the namespace if it doesn't exist, so we should be fine
-    if not role_assumed:
-        kubeconfig = os.environ.get("KUBECONFIG", None)
+    kubeconfig = os.environ.get("KUBECONFIG", None)
 
-        try:
-            kubernetes.config.load_kube_config(config_file=kubeconfig)
-        except:
-            kubernetes.config.load_incluster_config()
+    try:
+        kubernetes.config.load_kube_config(config_file=kubeconfig)
+    except:
+        kubernetes.config.load_incluster_config()
 
     api = CoreV1Api()
     try:
