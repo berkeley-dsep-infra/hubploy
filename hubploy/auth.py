@@ -6,6 +6,7 @@ import os
 import subprocess
 import shutil
 import tempfile
+import boto3
 
 from hubploy.config import get_config
 from contextlib import contextmanager
@@ -97,7 +98,6 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-            # TODO: fix this comment
             # Requires amazon-ecr-credential-helper to already be installed
             # this adds necessary line to authenticate docker with ecr
             docker_config_dir = os.path.expanduser('~/.docker')
@@ -114,11 +114,17 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
                 json.dump(config, f)
 
         if role:
-            subprocess.check_call([
-                'aws', 'sts', 'assume-role',
-                f'--role-arn={role}',
-                '--role-session-name=docker'
-            ])
+            sts_client = boto3.client('sts')
+            assumed_role_object = sts_client.assume_role(
+                RoleArn = role,
+                RoleSessionName = 'registry'
+            )
+
+            creds = assumed_role_object['Credentials']
+            os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
+            os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
+            os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
+            os.environ['ECR_ROLE_ASSUMED'] = 'True'
 
         yield
 
@@ -128,8 +134,10 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
         if role:
-            pass
-            # drop perms here???
+            unset_env_var('AWS_ACCESS_KEY_ID')
+            unset_env_var('AWS_SECRET_ACCESS_KEY')
+            unset_env_var('AWS_SESSION_TOKEN')
+            unset_env_var('ECR_ROLE_ASSUMED')
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -207,7 +215,11 @@ def cluster_auth(deployment):
                 raise ValueError(
                     f'Unknown provider {provider} found in hubploy.yaml')
         finally:
-            unset_env_var("KUBECONFIG", orig_kubeconfig)
+            # unset KUBECONFIG if it is set
+            try:
+                unset_env_var("KUBECONFIG", orig_kubeconfig)
+            except:
+                pass
 
 
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
@@ -266,13 +278,19 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             update_kubeconfig()
 
         if role:
-            subprocess.check_call([
-                'aws', 'sts', 'assume-role',
-                f'--role-arn={role}',
-                '--role-session-name=cluster'
-            ])
+            sts_client = boto3.client('sts')
+            assumed_role_object = sts_client.assume_role(
+                RoleArn = role,
+                RoleSessionName = 'cluster'
+            )
 
-            update_kubeconfig()
+            creds = assumed_role_object['Credentials']
+            os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
+            os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
+            os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
+            os.environ['EKS_ROLE_ASSUMED'] = 'True'
+
+            #update_kubeconfig()
 
         yield
 
@@ -282,8 +300,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
         if role:
-            pass
-            # drop perms here???
+            unset_env_var('AWS_ACCESS_KEY_ID')
+            unset_env_var('AWS_SECRET_ACCESS_KEY')
+            unset_env_var('AWS_SESSION_TOKEN')
+            unset_env_var('EKS_ROLE_ASSUMED')
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
@@ -327,7 +347,7 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
 
     yield
 
-def unset_env_var(env_var, old_env_var_value):
+def unset_env_var(env_var, old_env_var_value=None):
     """
     If the old environment variable's value exists, replace the current one with the old one
     If the old environment variable's value does not exist, delete the current one
