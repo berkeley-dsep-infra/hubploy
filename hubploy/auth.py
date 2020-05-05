@@ -127,7 +127,7 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
+            #os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
 
         yield
 
@@ -140,7 +140,7 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             unset_env_var('AWS_ACCESS_KEY_ID')
             unset_env_var('AWS_SECRET_ACCESS_KEY')
             unset_env_var('AWS_SESSION_TOKEN')
-            unset_env_var('AWS_ROLE_SESSION_NAME')
+            #unset_env_var('AWS_ROLE_SESSION_NAME')
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -294,9 +294,9 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
+            #os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
 
-            #update_kubeconfig()
+            update_kubeconfig()
 
         yield
 
@@ -309,7 +309,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             unset_env_var('AWS_ACCESS_KEY_ID')
             unset_env_var('AWS_SECRET_ACCESS_KEY')
             unset_env_var('AWS_SESSION_TOKEN')
-            unset_env_var('AWS_ROLE_SESSION_NAME')
+            #unset_env_var('AWS_ROLE_SESSION_NAME')
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
