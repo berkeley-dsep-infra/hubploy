@@ -73,9 +73,13 @@ def helm_upgrade(
         else:
             raise
 
-    # Before upgrading, uninstall any existing deployment
-    delete_cmd = [HELM_EXECUTABLE, 'uninstall', namespace, '--namespace', namespace]
-    subprocess.check_call(delete_cmd)
+    # Before upgrading, uninstall an existing deployment of the same name if it exists
+    # TODO: make this conditional on actual information about whether the deployment exists
+    try:
+        delete_cmd = [HELM_EXECUTABLE, 'uninstall', namespace, '--namespace', namespace]
+        subprocess.check_call(delete_cmd)
+    except:
+        pass
 
     cmd = [
         HELM_EXECUTABLE,
