@@ -73,6 +73,10 @@ def helm_upgrade(
         else:
             raise
 
+    # Before upgrading, uninstall any existing deployment
+    delete_cmd = [HELM_EXECUTABLE, 'uninstall', namespace, '--namespace', namespace]
+    subprocess.check_call(delete_cmd)
+
     cmd = [
         HELM_EXECUTABLE,
         'upgrade',

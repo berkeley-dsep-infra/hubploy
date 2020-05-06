@@ -80,8 +80,6 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
     if not service_key and not role:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
-    registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
-
     try:
         if service_key:
             # Get credentials from standard location
@@ -109,6 +107,7 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             else:
                 config = {}
 
+            registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
             config.setdefault('credHelpers', {})[registry] = 'ecr-login'
             with open(docker_config, 'w') as f:
                 json.dump(config, f)
