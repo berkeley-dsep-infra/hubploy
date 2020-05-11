@@ -150,7 +150,7 @@ def deploy(
     # Check for same pattern of files in a dir called 'secrets'
     # This supports keeping the secrets in a different git repo
     helm_secret_repo_files = [
-        f for f in helm_config_files
+        os.path.join('secrets', f) for f in helm_config_files
         if os.path.exists(os.path.join('secrets', f))
     ]
 
