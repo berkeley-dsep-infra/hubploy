@@ -70,14 +70,14 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
-def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
+def registry_auth_aws(deployment, project, zone, service_key=None, role_arn=None):
     """
     Setup AWS authentication to ECR container registry
 
     This changes *global machine state* on where docker can push to!
     """
 
-    if not service_key and not role:
+    if not service_key and not role_arn:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
     try:
@@ -112,21 +112,20 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             with open(docker_config, 'w') as f:
                 json.dump(config, f)
 
-        if role:
+        else:
             # this doesn't come back in the sts client response
             role_session_name = 'registry'
 
             sts_client = boto3.client('sts')
             assumed_role_object = sts_client.assume_role(
-                RoleArn = role,
-                RoleSessionName = role_session_name
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name
             )
 
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            #os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
 
         yield
 
@@ -135,11 +134,10 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role=None):
             # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
-        if role:
+        else:
             unset_env_var('AWS_ACCESS_KEY_ID')
             unset_env_var('AWS_SECRET_ACCESS_KEY')
             unset_env_var('AWS_SESSION_TOKEN')
-            #unset_env_var('AWS_ROLE_SESSION_NAME')
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -249,14 +247,14 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     yield
 
 
-def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=None):
+def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_arn=None):
     """
     Setup AWS authentication with service_key or with a role
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
 
-    if not service_key and not role:
+    if not service_key and not role_arn:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
     def update_kubeconfig():
@@ -279,21 +277,20 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
 
             update_kubeconfig()
 
-        if role:
+        else:
             # this doesn't come back in the sts client response
             role_session_name = 'cluster'
 
             sts_client = boto3.client('sts')
-            assumed_role_object = sts_client.assume_role(
-                RoleArn = role,
-                RoleSessionName = role_session_name
+            assumed_role_object=sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name
             )
 
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
-            #os.environ['AWS_ROLE_SESSION_NAME'] = role_session_name
 
             update_kubeconfig()
 
@@ -304,11 +301,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role=
             # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
-        if role:
+        else:
             unset_env_var('AWS_ACCESS_KEY_ID')
             unset_env_var('AWS_SECRET_ACCESS_KEY')
             unset_env_var('AWS_SESSION_TOKEN')
-            #unset_env_var('AWS_ROLE_SESSION_NAME')
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):

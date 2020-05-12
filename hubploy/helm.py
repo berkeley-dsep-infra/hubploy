@@ -73,18 +73,6 @@ def helm_upgrade(
         else:
             raise
 
-    # Before upgrading, uninstall an existing deployment of the same name if it exists
-    # TODO: make this conditional on actual information about whether the deployment exists
-    # TODO: should not be using namespace for the deployment name...
-    #check_failed_cmd = [HELM_EXECUTABLE, 'status', namespace, '--namespace', namespace]
-
-
-    try:
-        delete_cmd = [HELM_EXECUTABLE, 'uninstall', namespace, '--namespace', namespace]
-        subprocess.check_call(delete_cmd)
-    except:
-        pass
-
     cmd = [
         HELM_EXECUTABLE,
         'upgrade',
