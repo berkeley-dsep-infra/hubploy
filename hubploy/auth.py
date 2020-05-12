@@ -122,6 +122,11 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role_arn=None
                 RoleSessionName=role_session_name
             )
 
+
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
@@ -135,9 +140,9 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role_arn=None
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
         else:
-            unset_env_var('AWS_ACCESS_KEY_ID')
-            unset_env_var('AWS_SECRET_ACCESS_KEY')
-            unset_env_var('AWS_SESSION_TOKEN')
+            unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
+            unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
+            unset_env_var('AWS_SESSION_TOKEN', original_session_token)
 
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
@@ -287,6 +292,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_
                 RoleSessionName=role_session_name
             )
 
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
@@ -302,10 +311,9 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
         else:
-            unset_env_var('AWS_ACCESS_KEY_ID')
-            unset_env_var('AWS_SECRET_ACCESS_KEY')
-            unset_env_var('AWS_SESSION_TOKEN')
-
+            unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
+            unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
+            unset_env_var('AWS_SESSION_TOKEN', original_session_token)
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     """
@@ -348,7 +356,7 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
 
     yield
 
-def unset_env_var(env_var, old_env_var_value=None):
+def unset_env_var(env_var, old_env_var_value):
     """
     If the old environment variable's value exists, replace the current one with the old one
     If the old environment variable's value does not exist, delete the current one
