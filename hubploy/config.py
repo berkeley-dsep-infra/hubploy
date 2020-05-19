@@ -191,10 +191,10 @@ def get_config(deployment):
             # Multiple images are being built
             images = images_config['images']
 
-    for image in images:
-        # Normalize paths to be absolute paths
-        image['path'] = os.path.join(deployment_path, image['path'])
+        for image in images:
+            # Normalize paths to be absolute paths
+            image['path'] = os.path.join(deployment_path, image['path'])
 
-    config['images']['images'] = [LocalImage(**i) for i in images]
+        config['images']['images'] = [LocalImage(**i) for i in images]
 
     return config

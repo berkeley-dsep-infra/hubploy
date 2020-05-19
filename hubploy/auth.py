@@ -222,26 +222,24 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
+    print(deployment, project, cluster, zone, service_key)
     # Get credentials from standard location
     service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
 
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+    # if not running on CI, this is necessary to bypass local aws cli config
+    tmp_env = os.environ.copy()
+    tmp_env["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+    del tmp_env["AWS_DEFAULT_PROFILE"]
 
     try:
-
-        # Set env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
         subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                               '--name', cluster, '--region', zone])
-
+                               '--name', cluster, '--region', zone], env=tmp_env)
         yield
 
-    finally:
-        # Unset env variable for credential file location
-        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+    except Exception as e:
+        raise
 
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
@@ -294,4 +292,3 @@ def unset_env_var(env_var, old_env_var_value):
     del os.environ[env_var]
     if (old_env_var_value is not None):
         os.environ[env_var] = old_env_var_value
-
