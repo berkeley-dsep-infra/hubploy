@@ -99,11 +99,17 @@ class LocalImage:
         Since we know how the tags are formed, we try to find upto n tags for
         this image that might be possible cache hits
         """
+        last_tag = None
         for i in range(1, n):
             # FIXME: Make this look for last modified since before beginning of commit_range
             # Otherwise, if there are more than n commits in the current PR that touch this
             # local image, we might not get any useful caches
-            yield utils.last_modified_commit(self.path, n=i)
+            commit_sha = utils.last_modified_commit(self.path, n=i)
+            # Stop looking for tags if our commit hashes repeat
+            # This means `git log` is repeating itself
+            if commit_sha != last_tag:
+                last_tag = commit_sha
+                yield commit_sha
 
     def fetch_parent_image(self):
         """
