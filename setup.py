@@ -9,7 +9,8 @@ setuptools.setup(
     install_requires=[
         'docker',
         'jupyter-repo2docker>=0.11',
-        'kubernetes'
+        'kubernetes',
+        'boto3'
     ],
     entry_points={
         'console_scripts': [
