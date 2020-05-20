@@ -50,6 +50,7 @@ def registry_auth(deployment, push, check_registry):
 def registry_auth_gcloud(deployment, project, service_key):
     """
     Setup GCR authentication with a service_key
+
     This changes *global machine state* on where docker can push to!
     """
     service_key_path = os.path.join(
@@ -71,6 +72,7 @@ def registry_auth_gcloud(deployment, project, service_key):
 def registry_auth_aws(deployment, project, zone, service_key):
     """
     Setup AWS authentication to ECR container registry
+
     This changes *global machine state* on where docker can push to!
     """
 
@@ -114,13 +116,16 @@ def registry_auth_aws(deployment, project, zone, service_key):
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
     Azure authentication for ACR
+
     In hubploy.yaml include:
+
     registry:
       provider: azure
       azure:
         resource_group: resource_group_name
         registry: registry_name
         auth_file: azure_auth_file.yaml
+
     The azure_service_principal.json file should have the following
     keys: appId, tenant, password. This is the format produced
     by the az command when creating a service principal.
@@ -189,6 +194,7 @@ def cluster_auth(deployment):
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     """
     Setup GKE authentication with service_key
+
     This changes *global machine state* on what current kubernetes cluster is!
     """
     service_key_path = os.path.join(
@@ -213,6 +219,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
 def cluster_auth_aws(deployment, project, cluster, zone, service_key):
     """
     Setup AWS authentication with service_key
+
     This changes *global machine state* on what current kubernetes cluster is!
     """
     # Get credentials from standard location
@@ -239,14 +246,18 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key):
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     """
+
     Azure authentication for AKS
+
     In hubploy.yaml include:
+
     cluster:
       provider: azure
       azure:
         resource_group: resource_group_name
         cluster: cluster_name
         auth_file: azure_auth_file.yaml
+
     The azure_service_principal.json file should have the following
     keys: appId, tenant, password. This is the format produced
     by the az command when creating a service principal.
@@ -283,3 +294,4 @@ def unset_env_var(env_var, old_env_var_value):
     del os.environ[env_var]
     if (old_env_var_value is not None):
         os.environ[env_var] = old_env_var_value
+
