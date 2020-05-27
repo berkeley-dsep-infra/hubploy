@@ -78,6 +78,19 @@ These topic guides are meant as informative reference documents about various pi
 
    topics/index
 
+
+Reference Documentation
+=======================
+
+These reference documents are here to describe the configuration values of various files in Hubploy
+.
+
+.. toctree::
+   :maxdepth: 2
+
+   reference/index
+
+
 Known Limitations
 =================
 
