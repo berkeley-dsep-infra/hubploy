@@ -20,7 +20,11 @@ General Procedure:
 Step 0: Setup Prerequisites
 ===========================
 
-Hubploy does not manage your cloud resources - only your *Kubernetes* resources. You should use some other means to create your cloud resources. Example infrastructure deployments can be found at the `terraform-deploy repository <https://github.com/pangeo-data/terraform-deploy>`_. At a minimum, Hubloy expects a Kubernetes cluster. Many installations want to use a shared file system for home directories, so in those cases you want to hvae that managed outside Hubploy as well.
+Hubploy does not manage your cloud resources - only your *Kubernetes* resources. You should use 
+some other means to create your cloud resources. Example infrastructure deployments can be found 
+at the `terraform-deploy repository <https://github.com/pangeo-data/terraform-deploy>`_. At a 
+minimum, Hubloy expects a Kubernetes cluster. Many installations want to use a shared file system 
+for home directories, so in those cases you want to hvae that managed outside Hubploy as well.
 
 You also need the following tools installed:
 
@@ -30,21 +34,29 @@ You also need the following tools installed:
    #. `AWS CLI <https://aws.amazon.com/cli/>`_ for AWS
    #. `Azure CLI <https://docs.microsoft.com/en-us/cli/azure/>`_ for Azure
 
-#. A local install of `helm 3 <https://helm.sh/docs/intro/install/>`_. Helm 2 is also supported, but requires the same version of Helm to be present locally and on the cluster. If you are using Helm 2, you can find both versions with ``helm version``.
+#. A local install of `helm 3 <https://helm.sh/docs/intro/install/>`_. Helm 2 is also supported, 
+but requires the same version of Helm to be present locally and on the cluster. If you are using 
+Helm 2, you can find both versions with ``helm version``.
 
-#. A `docker environment <https://docs.docker.com/install/>`_ that you can use. This is only needed when building images.
+#. A `docker environment <https://docs.docker.com/install/>`_ that you can use. This is only 
+needed when building images.
 
 
 Step 1: Get the ``hubploy-template`` Repository
 =================================================
 
-There are a couple different options for acquiring the content in `this repository <https://github.com/yuvipanda/hubploy-template>`_. 
+There are a couple different options for acquiring the content in `this repository <
+https://github.com/yuvipanda/hubploy-template>`_. 
 
-* Use the repository as a template. Click the "Use this template" button on the GitHub repository's page, then input your own repo name. You can then use ``git clone`` as normal to get your repository onto your local machine.
+* Use the repository as a template. Click the "Use this template" button on the GitHub 
+repository's page, then input your own repo name. You can then use ``git clone`` as normal to get 
+your repository onto your local machine.
 
 * Fork the repository. 
 
-* Clone it directly with ``git clone https://github.com/yuvipanda/hubploy-template.git``. The disadvantage here is that you probably won't have permissions to push changes and will have to only develop locally. Not recommended.
+* Clone it directly with ``git clone https://github.com/yuvipanda/hubploy-template.git``. The 
+disadvantage here is that you probably won't have permissions to push changes and will have to 
+only develop locally. Not recommended.
 
 
 Step 2: Install Hubploy
@@ -65,7 +77,9 @@ Step 3: Configure the Hub
 Rename the Hub
 --------------
 
-Each directory inside ``deployments/`` represents an installation of JupyterHub. The default is called ``myhub``, but *please* rename it to something more descriptive. ``git commit`` the result as well.
+Each directory inside ``deployments/`` represents an installation of JupyterHub. The default is 
+called ``myhub``, but *please* rename it to something more descriptive. ``git commit`` the result 
+as well.
 
 .. code:: bash
 
@@ -78,10 +92,13 @@ Fill in the Minimum Config Details
 
 You need to find all things marked TODO and fill them in. In particular,
 
-1. ``hubploy.yaml`` needs information about where your docker registry & kubernetes cluster is, and paths to access keys as well.
-2. ``secrets/prod.yaml`` and ``secrets/staging.yaml`` require secure random keys you can generate and fill in.
+1. ``hubploy.yaml`` needs information about where your docker registry & kubernetes cluster is, 
+and paths to access keys as well.
+2. ``secrets/prod.yaml`` and ``secrets/staging.yaml`` require secure random keys you can generate 
+and fill in.
 
-If you want to try deploying to staging now, that is fine! Hub Customization can come later as you try things out.
+If you want to try deploying to staging now, that is fine! Hub Customization can come later as you 
+try things out.
 
 
 Hub Customizations
@@ -89,31 +106,46 @@ Hub Customizations
 
 You can customize your hub in two major ways:
 
-#. Customize the hub image. `repo2docker`_ is used to build the image, so you can put any of the `supported configuration files`_ under ``deployments/<hub-image>/image``. You *must* make a git commit after modifying this for ``hubploy build <hub-name> --push --check-registry`` to work, since it uses the commit hash as the image tag.
+#. Customize the hub image. `repo2docker`_ is used to build the image, so you can put any of the `
+supported configuration files`_ under ``deployments/<hub-image>/image``. You *must* make a git 
+commit after modifying this for ``hubploy build <hub-name> --push --check-registry`` to work, 
+since it uses the commit hash as the image tag.
 
 #. Customize hub configuration with various YAML files.
 
-   #. ``hub/values.yaml`` is common to *all* hubs that exist in this repo (multiple hubs can live under ``deployments/``).
+   #. ``hub/values.yaml`` is common to *all* hubs that exist in this repo (multiple hubs can live 
+   under ``deployments/``).
 
-   #. ``deployments/<hub-name>/config/common.yaml`` is where most of the config specific to each hub should go. Examples include memory / cpu limits, home directory definitions, etc
+   #. ``deployments/<hub-name>/config/common.yaml`` is where most of the config specific to each 
+   hub should go. Examples include memory / cpu limits, home directory definitions, etc
 
-   #. ``deployments/<hub-name>/config/staging.yaml`` and ``deployments/<hub-name>/config/prod.yaml`` are files specific to the staging & prod versions of the hub. These should be *as minimal as possible*. Ideally, only DNS entries, IP addresses, should be here.
+   #. ``deployments/<hub-name>/config/staging.yaml`` and ``deployments/<hub-name>/config/prod.yaml
+   `` are files specific to the staging & prod versions of the hub. These should be *as minimal as 
+   possible*. Ideally, only DNS entries, IP addresses, should be here.
 
-   #. ``deployments/<hub-name>/secrets/staging.yaml`` and ``deployments/<hub-name>/secrets/prod.yaml`` should contain information that mustn't be public. This would be proxy / hub secret tokens, any authentication tokens you have, etc. These files *must* be protected by something like `git-crypt <https://github.com/AGWA/git-crypt>`_ or `sops <https://github.com/mozilla/sops`_. **THIS REPO TEMPLATE DOES NOT HAVE THIS PROTECTION SET UP YET**
+   #. ``deployments/<hub-name>/secrets/staging.yaml`` and ``deployments/<hub-name>/secrets/
+   prod.yaml`` should contain information that mustn't be public. This would be proxy / hub secret 
+   tokens, any authentication tokens you have, etc. These files *must* be protected by something 
+   like `git-crypt <https://github.com/AGWA/git-crypt>`_ or `sops <https://github.com/mozilla/
+   sops`_. **THIS REPO TEMPLATE DOES NOT HAVE THIS PROTECTION SET UP YET**
 
 
-You can customize the staging hub, deploy it with ``hubploy deploy <hub-name> hub staging``, and iterate until you like how it behaves.
+You can customize the staging hub, deploy it with ``hubploy deploy <hub-name> hub staging``, and 
+iterate until you like how it behaves.
 
 
 Step 4: Build and Push the Image
 ================================
 
-1. Make sure tha appropriate docker credential helper is installed, so hubploy can push to the registry you need.
+1. Make sure tha appropriate docker credential helper is installed, so hubploy can push to the 
+registry you need.
 
-   For AWS, you need `docker-ecr-credential-helper <https://github.com/awslabs/amazon-ecr-credential-helper>`_
+   For AWS, you need `docker-ecr-credential-helper <https://github.com/awslabs/
+   amazon-ecr-credential-helper>`_
    For Google Cloud, you need the `gcloud commandline tool <https://cloud.google.com/sdk/>`_
 
-2. Make sure you are in your repo's root directory, so hubploy can find the directory structure it expects.
+2. Make sure you are in your repo's root directory, so hubploy can find the directory structure it 
+expects.
 
 3. Build and push the image to the registry
 
@@ -121,13 +153,17 @@ Step 4: Build and Push the Image
 
       hubploy build <hub-name> --push --check-registry
 
-   This should check if the user image for your hub needs to be rebuilt, and if so, it’ll build and push it.
+   This should check if the user image for your hub needs to be rebuilt, and if so, it’ll build 
+   and push it.
 
 
 Step 5: Deploy the Staging Hub
 ==============================
 
-Each hub will always have two versions - a *staging* hub that isn’t used by actual users, and a *production* hub that is. These two should be kept as similar as possible, so you can fearlessly test stuff on the staging hub without feaer that it is going to crash & burn when deployed to production.
+Each hub will always have two versions - a *staging* hub that isn’t used by actual users, and a *
+production* hub that is. These two should be kept as similar as possible, so you can fearlessly 
+test stuff on the staging hub without feaer that it is going to crash & burn when deployed to 
+production.
 
 To deploy to the staging hub,
 
@@ -135,7 +171,8 @@ To deploy to the staging hub,
 
    hubploy deploy <hub-name> hub staging
 
-This should take a while, but eventually return successfully. You can then find the public IP of your hub with:
+This should take a while, but eventually return successfully. You can then find the public IP of 
+your hub with:
 
 .. code:: bash
 
@@ -143,7 +180,8 @@ This should take a while, but eventually return successfully. You can then find 
 
 If you access that, you should be able to get in with any username & password.
 
-The defaults provision each user their own EBS / Persistent Disk, so this can get expensive quickly :) Watch out!
+The defaults provision each user their own EBS / Persistent Disk, so this can get expensive 
+quickly :) Watch out!
 
 If you didn't do more :ref:`hub-customizations`, you can do so now!
 
@@ -151,13 +189,16 @@ If you didn't do more :ref:`hub-customizations`, you can do so now!
 Step 6: Deploy the Production Hub
 =================================
 
-You can then do a production deployment with: ``hubploy deploy <hub-name> hub prod``, and test it out!
+You can then do a production deployment with: ``hubploy deploy <hub-name> hub prod``, and test it 
+out!
 
 
 Step 7: Setup git-crypt for Secrets
 ===================================
 
-`git-crypt <https://github.com/AGWA/git-crypt>`_ is used to keep encrypted secrets in the git repository. We would eventually like to use something like `sops <https://github.com/mozilla/sops>`_
+`git-crypt <https://github.com/AGWA/git-crypt>`_ is used to keep encrypted secrets in the git 
+repository. We would eventually like to use something like `sops <https://github.com/mozilla/sops>
+`_
 but for now...
 
 1. Install git-crypt. You can get it from brew or your package manager.
@@ -176,7 +217,8 @@ but for now...
       deployments/**/secrets/** filter=git-crypt diff=git-crypt
       support/secrets.yaml filter=git-crypt diff=git-crypt
 
-4. Make a copy of your encryption key. This will be used to decrypt the secrets. You will need to share it with your CD provider, and anyone else.
+4. Make a copy of your encryption key. This will be used to decrypt the secrets. You will need to 
+share it with your CD provider, and anyone else.
 
    .. code::
 
@@ -206,4 +248,6 @@ Step 8: GitHub Workflows
    and merge this PR. This should also trigger an action - see if
    this works out.
 
-**Note**: *Always* make a PR from staging to prod, never push directly to prod. We want to keep the staging and prod branches as close to each other as possible, and this is the only long term guaranteed way to do that.
+**Note**: *Always* make a PR from staging to prod, never push directly to prod. We want to keep 
+the staging and prod branches as close to each other as possible, and this is the only long term 
+guaranteed way to do that.

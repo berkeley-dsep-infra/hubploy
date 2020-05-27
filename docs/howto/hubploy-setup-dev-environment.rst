@@ -2,7 +2,8 @@
 How to Setup a Hubploy Development Environment
 ==============================================
 
-This is a guide on how to setup a development environment for Hubploy. Use cases would be for making a custom Hubploy image for your own use or contributing to the Hubploy repository.
+This is a guide on how to setup a development environment for Hubploy. Use cases would be for 
+making a custom Hubploy image for your own use or contributing to the Hubploy repository.
 
 General Procedure:
 
@@ -14,19 +15,28 @@ General Procedure:
 Prerequisites
 ===========================
 
-To start, you really only need ``git`` to clone the repository. Methodology for testing Hubploy is limited right now but my recommendation is that you have a working JupyterHub configuration that you can try to build / deploy.
+To start, you really only need ``git`` to clone the repository. Methodology for testing Hubploy is 
+limited right now but my recommendation is that you have a working JupyterHub configuration that 
+you can try to build / deploy.
 
-If you don't have such a configuration set up, we recommend setting one up using the `hubploy-template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the how-to on Deploying a JupyterHub with Hubploy (link later).
+If you don't have such a configuration set up, we recommend setting one up using the 
+`hubploy-template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the 
+how-to on Deploying a JupyterHub with Hubploy (link later).
 
-If you don't need to push your custom Hubploy anywhere (not recommended), you can just download hubploy with ``git clone https://github.com/yuvipanda/hubploy.git``.
+If you don't need to push your custom Hubploy anywhere (not recommended), you can just download 
+hubploy with ``git clone https://github.com/yuvipanda/hubploy.git``.
 
-Most use-cases will require that you have a hosted repository for Hubploy, so you should fork the `main Hubploy repository <https://github.com/yuvipanda/hubploy>`_ and then clone your fork (recommended).
+Most use-cases will require that you have a hosted repository for Hubploy, so you should fork the `
+main Hubploy repository <https://github.com/yuvipanda/hubploy>`_ and then clone your fork (
+recommended).
 
 
 Modifying Hubploy Files
 =======================
 
-The code for Hubploy is contained in the ``hubploy/hubploy`` folder. All of it is in Python, so there is no compiling necessary to use it locally. As long as the files are saved, their changes should be reflected the next time you run a ``hubploy`` command.
+The code for Hubploy is contained in the ``hubploy/hubploy`` folder. All of it is in Python, so 
+there is no compiling necessary to use it locally. As long as the files are saved, their changes 
+should be reflected the next time you run a ``hubploy`` command.
 
 
 Using a Custom Hubploy Locally
@@ -34,22 +44,34 @@ Using a Custom Hubploy Locally
 
 Hubploy can normally be installed via ``pip install hubploy``, but using a custom version of Hubploy will require different installation methods.
 
-If you are just using your custom Hubploy locally, you can link it with ``pip``. Go to the top folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
+If you are just using your custom Hubploy locally, you can link it with ``pip``. Go to the top 
+folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
 
   pip install -e ~/<absolute-path-to>/hubploy
 
-You can then make changes to your local Hubploy files and rerun Hubploy commands in the other folder for quick development.
+You can then make changes to your local Hubploy files and rerun Hubploy commands in the other 
+folder for quick development.
 
 Building a Custom Hubploy on DockerHub
 ======================================
 
-Another way to use Hubploy is by building a Docker image and pushing it to DockerHub. For this, you will need to have forked the Hubploy repository to your personal GitHub account. You will also need a personal DockerHub account.
+Another way to use Hubploy is by building a Docker image and pushing it to DockerHub. For this, 
+you will need to have forked the Hubploy repository to your personal GitHub account. You will also 
+need a personal DockerHub account.
 
-Modify the file ``hubploy/.github/workflows/docker-push.yaml``. Change ``name: yuvipanda/hubploy`` to ``name: <your-dockerhub-name>/hubploy``. You will need to input your DockerHub credentials as secrets in your personal Hubploy GitHub repository as ``DOCKER_USERNAME`` and ``DOCKER_PASSWORD``. Also in the GitHub repository, go to the Actions tab and allow the repo to run workflows by clicking "I understand my workflows, go ahead and run them."
+Modify the file ``hubploy/.github/workflows/docker-push.yaml``. Change ``name: yuvipanda/hubploy``
+ to ``name: <your-dockerhub-name>/hubploy``. You will need to input your DockerHub credentials as 
+ secrets in your personal Hubploy GitHub repository as ``DOCKER_USERNAME`` and ``DOCKER_PASSWORD``.
+ Also in the GitHub repository, go to the Actions tab and allow the repo to run workflows by 
+ clicking "I understand my workflows, go ahead and run them."
 
-Once you have made the changes you want for your custom Hubploy, you can ``git push`` your local changes. The file mentioned above will automatically attempt to push your Hubploy to DockerHub! If it fails, there will be output in the Actions tab that should have some insights.
+Once you have made the changes you want for your custom Hubploy, you can ``git push`` your local 
+changes. The file mentioned above will automatically attempt to push your Hubploy to DockerHub! If 
+it fails, there will be output in the Actions tab that should have some insights.
 
-Now that you have a publicly-hosted image for your custom Hubploy, you can reference it anywhere you want! In ``hubploy-template``, these references are in the ``hubploy/.github/workflows/`` files::
+Now that you have a publicly-hosted image for your custom Hubploy, you can reference it anywhere 
+you want! In ``hubploy-template``, these references are in the ``hubploy/.github/workflows/`` files
+::
 
   jobs:
     build:
@@ -60,4 +82,5 @@ Now that you have a publicly-hosted image for your custom Hubploy, you can refer
         - uses: actions/checkout@v1
         - uses: docker://yuvipanda/hubploy:20191210215236cfab2d
 
-You will need to change the docker link everywhere you see it in these files to the link of your image on DockerHub.
+You will need to change the docker link everywhere you see it in these files to the link of your 
+image on DockerHub.
