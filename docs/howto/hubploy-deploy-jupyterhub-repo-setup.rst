@@ -1,22 +1,21 @@
-=======
+=============================================================
 How to Setup a Repository to Deploy a JupyterHub with Hubploy
-=======
+=============================================================
 
 This is a guide on how to deploy a JupyterHub with Hubploy. 
 
 General Procedure:
 
-* :ref:`setup-prerequisites` 
-* :ref:`get-repo`
-* :ref:`install-hubploy`
-* :ref:`configure-hub`
-* :ref:`build-and-push-image`
-* :ref:`deploy-staging-hub`
-* :ref:`deploy-prod-hub1
-* :ref:`setup-git-crypt`
-* :ref:`github-workflows`
+* `Step 0: Setup Prerequisites`_
+* `Step 1: Get the hubploy-template Repository`_
+* `Step 2: Install Hubploy`_
+* `Step 3: Configure the Hub`_
+* `Step 4: Build and Push the Image`_
+* `Step 5: Deploy the Staging Hub`_
+* `Step 6: Deploy the Production Hub`_
+* `Step 7: Setup git-crypt for Secrets`_
+* `Step 8: GitHub Workflows`_
 
-.. _setup-prerequisites:
 
 Step 0: Setup Prerequisites
 ===========================
@@ -35,7 +34,6 @@ You also need the following tools installed:
 
 #. A `docker environment <https://docs.docker.com/install/>`_ that you can use. This is only needed when building images.
 
-.. _get-repo
 
 Step 1: Get the ``hubploy-template`` Repository
 =================================================
@@ -48,7 +46,6 @@ There are a couple different options for acquiring the content in `this reposito
 
 * Clone it directly with ``git clone https://github.com/yuvipanda/hubploy-template.git``. The disadvantage here is that you probably won't have permissions to push changes and will have to only develop locally. Not recommended.
 
-.. _install-hubploy
 
 Step 2: Install Hubploy
 =======================
@@ -61,7 +58,6 @@ Step 2: Install Hubploy
 
 This installs hubploy and its dependencies.
 
-.. _configure-hub
 
 Step 3: Configure the Hub
 =========================
@@ -76,10 +72,9 @@ Each directory inside ``deployments/`` represents an installation of JupyterHub.
    git mv deployments/myhub deployments/<your-hub-name>
    git commit
 
-.. _min-config-details
 
 Fill in the Minimum Config Details
-------------------------------
+----------------------------------
 
 You need to find all things marked TODO and fill them in. In particular,
 
@@ -88,7 +83,6 @@ You need to find all things marked TODO and fill them in. In particular,
 
 If you want to try deploying to staging now, that is fine! Hub Customization can come later as you try things out.
 
-.. _hub-customizations
 
 Hub Customizations
 ------------------
@@ -110,7 +104,6 @@ You can customize your hub in two major ways:
 
 You can customize the staging hub, deploy it with ``hubploy deploy <hub-name> hub staging``, and iterate until you like how it behaves.
 
-.. _build-and-push-image
 
 Step 4: Build and Push the Image
 ================================
@@ -130,7 +123,6 @@ Step 4: Build and Push the Image
 
    This should check if the user image for your hub needs to be rebuilt, and if so, it’ll build and push it.
 
-.. _deploy-staging-hub
 
 Step 5: Deploy the Staging Hub
 ==============================
@@ -155,14 +147,12 @@ The defaults provision each user their own EBS / Persistent Disk, so this can ge
 
 If you didn't do more :ref:`hub-customizations`, you can do so now!
 
-.. _deploy-prod-hub
 
 Step 6: Deploy the Production Hub
 =================================
 
 You can then do a production deployment with: ``hubploy deploy <hub-name> hub prod``, and test it out!
 
-.. _setup-git-crypt
 
 Step 7: Setup git-crypt for Secrets
 ===================================
@@ -194,7 +184,6 @@ but for now...
 
    This puts the key in a file called 'key'
 
-.. _github-workflows
 
 Step 8: GitHub Workflows
 ========================
