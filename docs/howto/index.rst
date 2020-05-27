@@ -1,8 +1,9 @@
-====
-title
-====
+==================
+How-To Guides Home
+==================
 
 .. toctree::
-	:titlesonly:
 
-	hubploy-deploy-jupyterhub-repo-setup
+   hubploy-deploy-jupyterhub-repo-setup
+   hubploy-setup-dev-environment
+   hubploy-build-jupyterhub-image
