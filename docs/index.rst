@@ -58,6 +58,7 @@ Deploying a change
          Deploy-To-Prod --> Happy-Users[Users are happy!]
       end
 
+
 How-To Guides
 =============
 
@@ -67,6 +68,7 @@ These how-to guides are intended to walk you through the basics of particular ta
    :maxdepth: 2
 
    howto/index
+
 
 Topic Guides
 ============
