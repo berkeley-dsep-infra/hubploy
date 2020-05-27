@@ -19,15 +19,15 @@ limited right now but my recommendation is that you have a working JupyterHub co
 you can try to build / deploy.
 
 If you don't have such a configuration set up, we recommend setting one up using the 
-`hubploy-template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the 
+`hubploy template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the 
 how-to on Deploying a JupyterHub with Hubploy (link later).
 
 If you don't need to push your custom Hubploy anywhere (not recommended), you can just download 
 hubploy with ``git clone https://github.com/yuvipanda/hubploy.git``.
 
-Most use-cases will require that you have a hosted repository for Hubploy, so you should fork the `
-main Hubploy repository <https://github.com/yuvipanda/hubploy>`_ and then clone your fork (
-recommended).
+Most use-cases will require that you have a hosted repository for Hubploy, so you should fork the 
+`main Hubploy repository <https://github.com/yuvipanda/hubploy>`_ and then clone your fork 
+(recommended).
 
 
 Modifying Hubploy Files
@@ -91,4 +91,4 @@ Contributing to Hubploy
 =======================
 
 If you have your own fork of Hubploy, and have a feature that would be generally useful, feel free 
-tto join the dicussions in the Issues section or contribute a PR!
+to join the dicussions in the Issues section or contribute a PR!
