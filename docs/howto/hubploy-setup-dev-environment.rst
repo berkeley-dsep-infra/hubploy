@@ -5,12 +5,11 @@ How to Setup a Hubploy Development Environment
 This is a guide on how to setup a development environment for Hubploy. Use cases would be for 
 making a custom Hubploy image for your own use or contributing to the Hubploy repository.
 
-General Procedure:
-
 * `Prerequisites`_
 * `Modifying Hubploy Files`_
 * `Using a Custom Hubploy Locally`_
 * `Building a Custom Hubploy on DockerHub`_
+* `Contributing to Hubploy`_
 
 Prerequisites
 ===========================
@@ -42,7 +41,8 @@ should be reflected the next time you run a ``hubploy`` command.
 Using a Custom Hubploy Locally
 ==============================
 
-Hubploy can normally be installed via ``pip install hubploy``, but using a custom version of Hubploy will require different installation methods.
+Hubploy can normally be installed via ``pip install hubploy``, but using a custom version of 
+Hubploy will require different installation methods.
 
 If you are just using your custom Hubploy locally, you can link it with ``pip``. Go to the top 
 folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
@@ -51,6 +51,7 @@ folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
 
 You can then make changes to your local Hubploy files and rerun Hubploy commands in the other 
 folder for quick development.
+
 
 Building a Custom Hubploy on DockerHub
 ======================================
@@ -84,3 +85,10 @@ you want! In ``hubploy-template``, these references are in the ``hubploy/.github
 
 You will need to change the docker link everywhere you see it in these files to the link of your 
 image on DockerHub.
+
+
+Contributing to Hubploy
+=======================
+
+If you have your own fork of Hubploy, and have a feature that would be generally useful, feel free 
+tto join the dicussions in the Issues section or contribute a PR!
