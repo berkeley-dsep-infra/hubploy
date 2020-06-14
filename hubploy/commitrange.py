@@ -1,3 +1,9 @@
+"""
+Util to acquire a git commit range (get_commit_range) that represents the
+changes that have triggered a certain CI system to run.
+
+Current CI systems supported: GitHub Actions.
+"""
 import os
 import json
 
