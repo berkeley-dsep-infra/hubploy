@@ -221,11 +221,7 @@ def cluster_auth(deployment):
                 raise ValueError(
                     f'Unknown provider {provider} found in hubploy.yaml')
         finally:
-            # unset KUBECONFIG if it is set
-            try:
-                unset_env_var("KUBECONFIG", orig_kubeconfig)
-            except:
-                pass
+            unset_env_var("KUBECONFIG", orig_kubeconfig)
 
 
 def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
@@ -263,12 +259,6 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_
     if not service_key and not role_arn:
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
-    def update_kubeconfig():
-        subprocess.check_call([
-        'aws', 'eks', 'update-kubeconfig',
-        '--name', cluster, '--region', zone
-    ])
-
     try:
         if service_key:
             # Get credentials from standard location
@@ -280,8 +270,6 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_
 
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
-            update_kubeconfig()
 
         else:
             # this doesn't come back in the sts client response
@@ -302,7 +290,10 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
 
-            update_kubeconfig()
+        subprocess.check_call([
+            'aws', 'eks', 'update-kubeconfig',
+            '--name', cluster, '--region', zone
+        ])
 
         yield
 
