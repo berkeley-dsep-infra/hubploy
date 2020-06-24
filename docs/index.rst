@@ -58,6 +58,41 @@ Deploying a change
          Deploy-To-Prod --> Happy-Users[Users are happy!]
       end
 
+
+How-To Guides
+=============
+
+These how-to guides are intended to walk you through the basics of particular tasks that you might do with Hubploy.
+
+.. toctree::
+   :maxdepth: 2
+
+   howto/index
+
+
+Topic Guides
+============
+
+These topic guides are meant as informative reference documents about various pieces of Hubploy.
+
+.. toctree::
+   :maxdepth: 2
+
+   topics/index
+
+
+Reference Documentation
+=======================
+
+These reference documents are here to describe the configuration values of various files in Hubploy
+.
+
+.. toctree::
+   :maxdepth: 2
+
+   reference/index
+
+
 Known Limitations
 =================
 
