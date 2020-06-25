@@ -6,6 +6,7 @@ import os
 import subprocess
 import shutil
 import tempfile
+import boto3
 
 from hubploy.config import get_config
 from contextlib import contextmanager
@@ -69,49 +70,81 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
-def registry_auth_aws(deployment, project, zone, service_key):
+def registry_auth_aws(deployment, project, zone, service_key=None, role_arn=None):
     """
     Setup AWS authentication to ECR container registry
 
     This changes *global machine state* on where docker can push to!
     """
 
-    # Get credentials from standard location
-    service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
-    )
-
-    if not os.path.isfile(service_key_path):
-        raise FileNotFoundError(
-            f'The service_key file {service_key_path} does not exist')
-
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+    if not service_key and not role_arn:
+        raise Exception('AWS authentication requires either a service key or the use of a role')
 
     try:
-        # Set env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
-
         registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
-        # Requires amazon-ecr-credential-helper to already be installed
-        # this adds necessary line to authenticate docker with ecr
-        docker_config_dir = os.path.expanduser('~/.docker')
-        os.makedirs(docker_config_dir, exist_ok=True)
-        docker_config = os.path.join(docker_config_dir, 'config.json')
-        if os.path.exists(docker_config):
-            with open(docker_config, 'r') as f:
-                config = json.load(f)
-        else:
-            config = {}
 
-        config.setdefault('credHelpers', {})[registry] = 'ecr-login'
-        with open(docker_config, 'w') as f:
-            json.dump(config, f)
+        if service_key:
+            # Get credentials from standard location
+            service_key_path = os.path.join(
+                'deployments', deployment, 'secrets', service_key
+            )
+
+            if not os.path.isfile(service_key_path):
+                raise FileNotFoundError(
+                    f'The service_key file {service_key_path} does not exist')
+
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+
+            # Set env variable for credential file location
+            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+
+            # Requires amazon-ecr-credential-helper to already be installed
+            # this adds necessary line to authenticate docker with ecr
+            docker_config_dir = os.path.expanduser('~/.docker')
+            os.makedirs(docker_config_dir, exist_ok=True)
+            docker_config = os.path.join(docker_config_dir, 'config.json')
+            if os.path.exists(docker_config):
+                with open(docker_config, 'r') as f:
+                    config = json.load(f)
+            else:
+                config = {}
+
+            config.setdefault('credHelpers', {})[registry] = 'ecr-login'
+            with open(docker_config, 'w') as f:
+                json.dump(config, f)
+
+        else:
+            # this doesn't come back in the sts client response
+            role_session_name = 'registry'
+
+            sts_client = boto3.client('sts')
+            assumed_role_object = sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name
+            )
+
+
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
+            creds = assumed_role_object['Credentials']
+            os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
+            os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
+            os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
 
         yield
 
     finally:
-        # Unset env variable for credential file location
-        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+        if service_key:
+            # Unset env variable for credential file location
+            unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+
+        else:
+            unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
+            unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
+            unset_env_var('AWS_SESSION_TOKEN', original_session_token)
+
 
 def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
@@ -216,33 +249,63 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     yield
 
 
-def cluster_auth_aws(deployment, project, cluster, zone, service_key):
+def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_arn=None):
     """
-    Setup AWS authentication with service_key
+    Setup AWS authentication with service_key or with a role
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    # Get credentials from standard location
-    service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
-    )
 
-    original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+    if not service_key and not role_arn:
+        raise Exception('AWS authentication requires either a service key or the use of a role')
 
     try:
+        if service_key:
+            # Get credentials from standard location
+            service_key_path = os.path.join(
+                'deployments', deployment, 'secrets', service_key
+            )
 
-        # Set env variable for credential file location
-        os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
-        subprocess.check_call(['aws', 'eks', 'update-kubeconfig',
-                               '--name', cluster, '--region', zone])
+            # Set env variable for credential file location
+            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+
+        else:
+            # this doesn't come back in the sts client response
+            role_session_name = 'cluster'
+
+            sts_client = boto3.client('sts')
+            assumed_role_object=sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name
+            )
+
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
+            creds = assumed_role_object['Credentials']
+            os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
+            os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
+            os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
+
+        subprocess.check_call([
+            'aws', 'eks', 'update-kubeconfig',
+            '--name', cluster, '--region', zone
+        ])
 
         yield
 
     finally:
-        # Unset env variable for credential file location
-        unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+        if service_key:
+            # Unset env variable for credential file location
+            unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
 
+        else:
+            unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
+            unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
+            unset_env_var('AWS_SESSION_TOKEN', original_session_token)
 
 def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
     """
