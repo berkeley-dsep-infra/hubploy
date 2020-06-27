@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import shutil
+import pathlib
 import tempfile
 import boto3
 
@@ -12,6 +13,7 @@ from hubploy.config import get_config
 from contextlib import contextmanager
 
 from ruamel.yaml import YAML
+from ruamel.yaml.scanner import ScannerError
 yaml = YAML(typ='rt')
 
 
@@ -54,14 +56,15 @@ def registry_auth_gcloud(deployment, project, service_key):
 
     This changes *global machine state* on where docker can push to!
     """
-    service_key_path = os.path.join(
+    encrypted_service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
-    subprocess.check_call([
-        'gcloud', 'auth',
-        'activate-service-account',
-        '--key-file', os.path.abspath(service_key_path)
-    ])
+    with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
+        subprocess.check_call([
+            'gcloud', 'auth',
+            'activate-service-account',
+            '--key-file', os.path.abspath(decrypted_service_key_path)
+        ])
 
     subprocess.check_call([
         'gcloud', 'auth', 'configure-docker'
@@ -230,14 +233,15 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    service_key_path = os.path.join(
+    encrypted_service_key_path = os.path.join(
         'deployments', deployment, 'secrets', service_key
     )
-    subprocess.check_call([
-        'gcloud', 'auth',
-        'activate-service-account',
-        '--key-file', os.path.abspath(service_key_path)
-    ])
+    with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
+        subprocess.check_call([
+            'gcloud', 'auth',
+            'activate-service-account',
+            '--key-file', os.path.abspath(decrypted_service_key_path)
+        ])
 
     subprocess.check_call([
         'gcloud', 'container', 'clusters',
@@ -358,3 +362,42 @@ def unset_env_var(env_var, old_env_var_value):
     if (old_env_var_value is not None):
         os.environ[env_var] = old_env_var_value
 
+@contextmanager
+def decrypt_file(encrypted_path):
+    """
+    Provide secure temporary decrypted contents of a given file
+
+    If file isn't a sops encrypted file, we assume no encryption is used
+    and return the current path.
+    """
+    # We must first determine if the file is using sops
+    # sops files are JSON/YAML with a `sops` key. So we first check
+    # if the file is valid JSON/YAML, and then if it has a `sops` key
+    with open(encrypted_path) as f:
+        _, ext = os.path.splitext(encrypted_path)
+        # Support the (clearly wrong) people who use .yml instead of .yaml
+        if ext == '.yaml' or ext == '.yml':
+            try:
+                encrypted_data = yaml.load(f)
+            except ScannerError:
+                yield encrypted_path
+                return
+        elif ext == '.json':
+            try:
+                encrypted_data = json.load(f)
+            except json.JSONDecodeError:
+                yield encrypted_path
+                return
+
+    if 'sops' not in encrypted_data:
+        yield encrypted_path
+        return
+
+    # If file has a `sops` key, we assume it's sops encrypted
+    with tempfile.NamedTemporaryFile() as f:
+        subprocess.check_call([
+            'sops',
+            '--output', f.name,
+            '--decrypt', encrypted_path
+        ])
+        yield f.name
