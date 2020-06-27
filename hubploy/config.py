@@ -1,5 +1,7 @@
 """
-Utils for dealing with hubploy config
+A util (get_config) that process hubploy.yaml deployment configuration and
+returns it embedded with a set of LocalImage objects with filesystem paths made
+absolute.
 """
 import os
 from ruamel.yaml import YAML
@@ -167,9 +169,10 @@ class LocalImage:
 
 def get_config(deployment):
     """
-    Return configuration if it exists for a deployment
-
-    Normalize images config if it exists
+    Returns hubploy.yaml configuration as a Python dictionary if it exists for a
+    given deployment, and also augments it with a set of LocalImage objects in
+    ["images"]["images"] and updates the images' filesystem paths to be
+    absolute.
     """
     deployment_path = os.path.abspath(os.path.join('deployments', deployment))
     if not os.path.exists(deployment_path):

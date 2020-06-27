@@ -1,19 +1,6 @@
 """
-Convention based helm deploys
-
-Expects the following configuration layout from cwd:
-
-chart-name/ (Helm deployment chart)
-deployments/
-  - deployment-name
-    - image/
-    - secrets/
-      - prod.yaml
-      - staging.yaml
-    - config/
-      - common.yaml
-      - staging.yaml
-      - prod.yaml
+Util to deploy a Helm chart (deploy) given hubploy configuration and Helm chart
+configuration located in accordance to hubploy conventions.
 """
 import itertools
 import os

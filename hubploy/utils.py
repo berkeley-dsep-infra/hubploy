@@ -1,5 +1,6 @@
 """
-Utilities for calling out to git
+Utils to extract information (last_modified_commit, path_touched) from the git
+history.
 """
 import subprocess
 

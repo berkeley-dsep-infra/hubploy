@@ -1,5 +1,9 @@
 """
-Setup authentication from various providers
+Utils to authenticate with a set of cloud providers' container registries
+(registry_auth) and Kubernetes clusters (cluster_auth) for use in
+with-statements.
+
+Current cloud providers supported: gcloud, aws, and azure.
 """
 import json
 import os
