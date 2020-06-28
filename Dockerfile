@@ -9,8 +9,7 @@ ENV PATH ${VENV_PATH}:/opt/google-cloud-sdk/bin:/opt/awscli/bin:${PATH}
 
 # Force gcloud to run on python3 ugh
 ENV CLOUDSDK_PYTHON python3
-
-RUN curl -sSL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-296.0.1-linux-x86_64.tar.gz | tar -xzf - -C /opt/
+RUN curl -sSL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-298.0.0-linux-x86_64.tar.gz | tar -xzf - -C /opt/
 
 RUN cd /tmp && \
     curl -sSL "https://d1vvhvl2y92vvt.cloudfront.net/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
