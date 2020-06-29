@@ -18,9 +18,22 @@ def get_commit_range():
 
 
 def get_commit_range_github():
+    """
+    Auto detects commit range for pull requests and pushes from within a GitHub
+    Action job using environment variables and .json file describing the event
+    triggering the job.
+
+    About env vars:     https://help.github.com/en/actions/configuring-and-managing-workflows/using-environment-variables
+    About event file:   https://developer.github.com/webhooks/event-payloads/
+    """
     with open(os.environ['GITHUB_EVENT_PATH']) as f:
         event = json.load(f)
 
+    # pull_request ref: https://developer.github.com/webhooks/event-payloads/#pull_request
     if 'pull_request' in event:
         base = event['pull_request']['base']['sha']
         return f'{base}...HEAD'
+
+    # push ref: https://developer.github.com/webhooks/event-payloads/#push
+    if 'before' in event:
+        return f"{event['before']}...HEAD"
