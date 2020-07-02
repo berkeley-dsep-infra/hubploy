@@ -31,7 +31,7 @@ RUN cd /tmp && \
 # Install SOPS
 RUN cd /tmp && \
     curl -sSL https://github.com/mozilla/sops/releases/download/v3.5.0/sops_3.5.0_amd64.deb -o sops.deb && \
-    apt-get install ./sops.deb && \
+    dpkg -i ./sops.deb && \
     rm sops.deb
 
 # Download helm v2/v3 to helm2/helm3 and symlink helm2 to helm. Make hubploy use
