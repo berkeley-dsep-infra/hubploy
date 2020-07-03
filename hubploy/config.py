@@ -138,9 +138,6 @@ class LocalImage:
 
         One of check_registry or commit_range must be set
         """
-        if check_registry and commit_range:
-            raise ValueError("Only one of check_registry or commit_range can be set")
-
         if not (check_registry or commit_range):
             raise ValueError("One of check_registry or commit_range must be set")
 
