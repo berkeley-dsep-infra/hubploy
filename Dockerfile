@@ -1,4 +1,4 @@
-FROM python:3.7-slim-buster
+FROM python:3.8-slim-buster
 
 # Software in Dockerfile to manually bump versions on:
 # - gcloud: https://cloud.google.com/sdk/docs/downloads-versioned-archives
