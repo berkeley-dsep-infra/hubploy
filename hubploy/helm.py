@@ -14,16 +14,21 @@ deployments/
       - common.yaml
       - staging.yaml
       - prod.yaml
+
+Util to deploy a Helm chart (deploy) given hubploy configuration and Helm chart
+configuration located in accordance to hubploy conventions.
 """
 import itertools
 import os
 import shutil
 import subprocess
 import kubernetes.config
+from contextlib import ExitStack
 from kubernetes.client import CoreV1Api, rest
 from kubernetes.client.models import V1Namespace, V1ObjectMeta
 
 from hubploy.config import get_config
+from hubploy.auth import decrypt_file
 
 
 HELM_EXECUTABLE = os.environ.get('HELM_EXECUTABLE', 'helm')
@@ -144,15 +149,17 @@ def deploy(
     helm_config_files = [f for f in [
         os.path.join('deployments', deployment, 'config', 'common.yaml'),
         os.path.join('deployments', deployment, 'config', f'{environment}.yaml'),
-        os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
     ] if os.path.exists(f)]
 
-    # Check for same pattern of files in a dir called 'secrets'
-    # This supports keeping the secrets in a different git repo
-    helm_secret_repo_files = [
-        os.path.join('secrets', f) for f in helm_config_files
-        if os.path.exists(os.path.join('secrets', f))
-    ]
+
+    helm_secret_files = [f for f in [
+        # Support for secrets in same repo
+        os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
+        # Support for secrets in a submodule repo
+        os.path.join('secrets', 'deployments', deployment, 'secrets', f'{environment}.yaml'),
+    ] if os.path.exists(f)]
+
+
 
     if config.get('images'):
         for image in config['images']['images']:
@@ -163,16 +170,19 @@ def deploy(
             helm_config_overrides_string.append(f'{image.helm_substitution_path}.tag={image.tag}')
             helm_config_overrides_string.append(f'{image.helm_substitution_path}.name={image.name}')
 
-    helm_upgrade(
-        name,
-        namespace,
-        chart,
-        helm_config_files + helm_secret_repo_files,
-        helm_config_overrides_implicit,
-        helm_config_overrides_string,
-        version,
-        timeout,
-        force,
-        atomic,
-        cleanup_on_fail,
-    )
+    with ExitStack() as stack:
+        decrypted_secret_files = [stack.enter_context(decrypt_file(f)) for f in helm_secret_files]
+
+        helm_upgrade(
+            name,
+            namespace,
+            chart,
+            helm_config_files + decrypted_secret_files,
+            helm_config_overrides_implicit,
+            helm_config_overrides_string,
+            version,
+            timeout,
+            force,
+            atomic,
+            cleanup_on_fail,
+        )

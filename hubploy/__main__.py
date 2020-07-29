@@ -18,7 +18,6 @@ def main():
     trigger_change_group.add_argument(
         '--commit-range',
         help='Trigger image rebuilds only if files in image directory have changed in this git commit range',
-        default=commitrange.get_commit_range()
     )
     # FIXME: Needs a better name?
     trigger_change_group.add_argument(
@@ -96,12 +95,16 @@ def main():
         sys.exit(1)
 
     if args.command == 'build':
-        if not args.check_registry and not args.commit_range:
-            # commit_range autodetection failed, and check registry isn't set
-            # FIXME: Provide an actually useful error message
-            print("Could not auto-detect commit-range, and --check-registry is not set", file=sys.stderr)
-            print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
-            sys.exit(1)
+        if not (args.check_registry or args.commit_range):
+            args.commit_range = commitrange.get_commit_range()
+            if not args.commit_range:
+                # commit_range autodetection failed, and check registry isn't set
+                # FIXME: Provide an actually useful error message
+                print("Could not auto-detect commit-range, and --check-registry is not set", file=sys.stderr)
+                print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
+                sys.exit(1)
+
+
 
         with auth.registry_auth(args.deployment, args.push, args.check_registry):
 

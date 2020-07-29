@@ -1,5 +1,7 @@
 """
-Utils for dealing with hubploy config
+A util (get_config) that process hubploy.yaml deployment configuration and
+returns it embedded with a set of LocalImage objects with filesystem paths made
+absolute.
 """
 import os
 from ruamel.yaml import YAML
@@ -99,11 +101,17 @@ class LocalImage:
         Since we know how the tags are formed, we try to find upto n tags for
         this image that might be possible cache hits
         """
+        last_tag = None
         for i in range(1, n):
             # FIXME: Make this look for last modified since before beginning of commit_range
             # Otherwise, if there are more than n commits in the current PR that touch this
             # local image, we might not get any useful caches
-            yield utils.last_modified_commit(self.path, n=i)
+            commit_sha = utils.last_modified_commit(self.path, n=i)
+            # Stop looking for tags if our commit hashes repeat
+            # This means `git log` is repeating itself
+            if commit_sha != last_tag:
+                last_tag = commit_sha
+                yield commit_sha
 
     def fetch_parent_image(self):
         """
@@ -130,9 +138,6 @@ class LocalImage:
 
         One of check_registry or commit_range must be set
         """
-        if check_registry and commit_range:
-            raise ValueError("Only one of check_registry or commit_range can be set")
-
         if not (check_registry or commit_range):
             raise ValueError("One of check_registry or commit_range must be set")
 
@@ -161,9 +166,10 @@ class LocalImage:
 
 def get_config(deployment):
     """
-    Return configuration if it exists for a deployment
-
-    Normalize images config if it exists
+    Returns hubploy.yaml configuration as a Python dictionary if it exists for a
+    given deployment, and also augments it with a set of LocalImage objects in
+    ["images"]["images"] and updates the images' filesystem paths to be
+    absolute.
     """
     deployment_path = os.path.abspath(os.path.join('deployments', deployment))
     if not os.path.exists(deployment_path):
