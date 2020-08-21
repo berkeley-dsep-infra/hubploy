@@ -1,4 +1,20 @@
 """
+Convention based helm deploys
+
+Expects the following configuration layout from cwd:
+
+chart-name/ (Helm deployment chart)
+deployments/
+  - deployment-name
+    - image/ (optional)
+    - secrets/
+      - prod.yaml
+      - staging.yaml
+    - config/
+      - common.yaml
+      - staging.yaml
+      - prod.yaml
+
 Util to deploy a Helm chart (deploy) given hubploy configuration and Helm chart
 configuration located in accordance to hubploy conventions.
 """
@@ -107,7 +123,7 @@ def deploy(
     {chart}/ (Helm deployment chart)
     deployments/
     - {deployment}
-        - image/
+        - image/ (optional)
         - secrets/
             - {environment}.yaml
         - config/
@@ -145,13 +161,14 @@ def deploy(
 
 
 
-    for image in config['images']['images']:
-        # We can support other charts that wrap z2jh by allowing various
-        # config paths where we set image tags and names.
-        # We default to one sublevel, but we can do multiple levels.
-        # With the PANGEO chart, we this could be set to `pangeo.jupyterhub.singleuser.image`
-        helm_config_overrides_string.append(f'{image.helm_substitution_path}.tag={image.tag}')
-        helm_config_overrides_string.append(f'{image.helm_substitution_path}.name={image.name}')
+    if config.get('images'):
+        for image in config['images']['images']:
+            # We can support other charts that wrap z2jh by allowing various
+            # config paths where we set image tags and names.
+            # We default to one sublevel, but we can do multiple levels.
+            # With the PANGEO chart, we this could be set to `pangeo.jupyterhub.singleuser.image`
+            helm_config_overrides_string.append(f'{image.helm_substitution_path}.tag={image.tag}')
+            helm_config_overrides_string.append(f'{image.helm_substitution_path}.name={image.name}')
 
     with ExitStack() as stack:
         decrypted_secret_files = [stack.enter_context(decrypt_file(f)) for f in helm_secret_files]
