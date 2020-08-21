@@ -203,4 +203,23 @@ def get_config(deployment):
 
         config['images']['images'] = [LocalImage(**i) for i in images]
 
+        # FIXME: Does not currently support multiple images in the images block
+        # Backwards compatibility checker for images block
+        if config['images']['registry']['provider'] == 'aws' and 'project' in config['images']['registry']['aws']:
+            config['images']['registry']['aws']['account_id'] = config['images']['registry']['aws']['project']
+            del config['images']['registry']['aws']['project']
+
+        if config['images']['registry']['provider'] == 'aws' and 'zone' in config['images']['registry']['aws']:
+            config['images']['registry']['aws']['region'] = config['images']['registry']['aws']['zone']
+            del config['images']['registry']['aws']['zone']
+
+        # Backwards compatibility checker for cluster block
+        if config['cluster']['provider'] == 'aws' and 'project' in config['cluster']['aws']:
+            config['cluster']['aws']['account_id'] = config['cluster']['aws']['project']
+            del config['cluster']['aws']['project']
+
+        if config['cluster']['provider'] == 'aws' and 'zone' in config['cluster']['aws']:
+            config['cluster']['aws']['region'] = config['cluster']['aws']['zone']
+            del config['cluster']['aws']['zone']
+
     return config
