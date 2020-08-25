@@ -67,3 +67,11 @@ def path_touched(*paths, commit_range):
     return subprocess.check_output([
         'git', 'diff', '--name-only', commit_range, '--', *paths
     ]).decode('utf-8').strip() != ''
+
+
+def is_commit(ref):
+    try:
+        subprocess.check_call(['git', 'cat-file', 'commit', ref])
+        return True
+    except subprocess.CalledProcessError:
+        return False

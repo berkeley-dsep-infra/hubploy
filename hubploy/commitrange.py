@@ -7,6 +7,7 @@ Current CI systems supported: GitHub Actions.
 import os
 import json
 
+from hubploy.utils import is_commit
 
 def get_commit_range():
     """
@@ -36,4 +37,8 @@ def get_commit_range_github():
 
     # push ref: https://developer.github.com/webhooks/event-payloads/#push
     if 'before' in event:
-        return f"{event['before']}...HEAD"
+        if not is_commit(event['before']):
+            print(f"A GitHub Actions environment was detected, but the constructed commit range ({event['before']}...HEAD) was invalid. This can happen if a git push --force has been run.")
+            return None
+        else:
+            return f"{event['before']}...HEAD"
