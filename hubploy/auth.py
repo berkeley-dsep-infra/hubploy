@@ -204,29 +204,36 @@ def cluster_auth(deployment):
     if 'cluster' in config:
         cluster = config['cluster']
         provider = cluster.get('provider')
-
-        # Temporarily kubeconfig file
-        temp_kubeconfig = tempfile.NamedTemporaryFile()
         orig_kubeconfig = os.environ.get("KUBECONFIG", None)
-
         try:
-            os.environ["KUBECONFIG"] = temp_kubeconfig.name
-
-            if provider == 'gcloud':
-                yield from cluster_auth_gcloud(
-                    deployment, **cluster['gcloud']
+            if provider == 'kubeconfig':
+                encrypted_kubeconfig_path = os.path.join(
+                    'deployments', deployment, 'secrets', cluster['kubeconfig']['filename']
                 )
-            elif provider == 'aws':
-                yield from cluster_auth_aws(
-                    deployment, **cluster['aws']
-                )
-            elif provider == 'azure':
-                yield from cluster_auth_azure(
-                    deployment, **cluster['azure']
-                )
+                with decrypt_file(encrypted_kubeconfig_path) as kubeconfig_path:
+                    os.environ["KUBECONFIG"] = kubeconfig_path
+                    yield
             else:
-                raise ValueError(
-                    f'Unknown provider {provider} found in hubploy.yaml')
+
+                # Temporarily kubeconfig file
+                with tempfile.NamedTemporaryFile() as temp_kubeconfig:
+                    os.environ["KUBECONFIG"] = temp_kubeconfig.name
+
+                    if provider == 'gcloud':
+                        yield from cluster_auth_gcloud(
+                            deployment, **cluster['gcloud']
+                        )
+                    elif provider == 'aws':
+                        yield from cluster_auth_aws(
+                            deployment, **cluster['aws']
+                        )
+                    elif provider == 'azure':
+                        yield from cluster_auth_azure(
+                            deployment, **cluster['azure']
+                        )
+                    else:
+                        raise ValueError(
+                            f'Unknown provider {provider} found in hubploy.yaml')
         finally:
             unset_env_var("KUBECONFIG", orig_kubeconfig)
 
@@ -362,7 +369,8 @@ def unset_env_var(env_var, old_env_var_value):
     If the old environment variable's value does not exist, delete the current one
     """
 
-    del os.environ[env_var]
+    if env_var in os.environ:
+        del os.environ[env_var]
     if (old_env_var_value is not None):
         os.environ[env_var] = old_env_var_value
 
