@@ -46,6 +46,10 @@ def registry_auth(deployment, push, check_registry):
                 yield from registry_auth_azure(
                     deployment, **registry['azure']
                 )
+            elif provider == 'dockerconfig':
+                yield from registry_auth_dockercfg(
+                    deployment, **registry['dockerconfig']
+                )
             else:
                 raise ValueError(
                     f'Unknown provider {provider} found in hubploy.yaml')
@@ -53,6 +57,19 @@ def registry_auth(deployment, push, check_registry):
         # We actually don't need to auth, but we are yielding anyway
         # contextlib.contextmanager does not like it when you don't yield
         yield
+
+def registry_auth_dockercfg(deployment, filename):
+    encrypted_file_path = os.path.join(
+        'deployments', deployment, 'secrets', filename
+    )
+
+    orig_dockercfg = os.environ.get('DOCKER_CONFIG', None)
+    with decrypt_file(encrypted_file_path) as auth_file_path:
+        try:
+            os.environ['DOCKER_CONFIG'] = auth_file_path
+            yield
+        finally:
+            unset_env_var('DOCKER_CONFIG', orig_dockercfg)
 
 def registry_auth_gcloud(deployment, project, service_key):
     """
