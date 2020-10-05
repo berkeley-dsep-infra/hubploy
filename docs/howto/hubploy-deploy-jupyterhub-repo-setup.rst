@@ -48,14 +48,14 @@ Step 1: Get the ``hubploy-template`` Repository
 There are a couple different options for acquiring the content in `this repository`_. 
 
 * Use the repository as a template. Click the "Use this template" button on the GitHub 
-   repository's page, then input your own repo name. You can then use ``git clone`` as normal to 
-   get your repository onto your local machine.
+  repository's page, then input your own repo name. You can then use ``git clone`` as normal to 
+  get your repository onto your local machine.
 
 * Fork the repository. 
 
 * Clone it directly with ``git clone https://github.com/yuvipanda/hubploy-template.git``. The 
-   disadvantage here is that you probably won't have permissions to push changes and will have to 
-   only develop locally. Not recommended.
+  disadvantage here is that you probably won't have permissions to push changes and will have to 
+  only develop locally. Not recommended.
 
 
 Step 2: Install Hubploy
