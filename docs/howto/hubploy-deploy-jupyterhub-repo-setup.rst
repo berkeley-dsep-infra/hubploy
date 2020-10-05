@@ -92,9 +92,14 @@ Fill in the Minimum Config Details
 You need to find all things marked TODO and fill them in. In particular,
 
 #. ``hubploy.yaml`` needs information about where your docker registry & kubernetes cluster is, 
-   and paths to access keys as well.
+   and paths to access keys as well. These access key files should be in the deployment's
+   ``secret/`` folder.
 #. ``secrets/prod.yaml`` and ``secrets/staging.yaml`` require secure random keys you can generate 
    and fill in.
+
+If you are deploying onto AWS infrastructure, your access key file should look like the aws
+credentials file (usually found at ``~/.aws/credentials``). However, the profile you use *must*
+be named ``default``.
 
 If you want to try deploying to staging now, that is fine! Hub Customization can come later as you 
 try things out.
