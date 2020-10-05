@@ -18,8 +18,8 @@ Here is the ``hubploy.yaml`` file that comes with cloning hubploy-template::
 	      service_key: gcr-key.json
 	    aws:
 	      # Pushes to Amazon ECR
-	      project: # TODO: AWS account id
-	      zone: # TODO: Zone in which your container image should live. Match your cluster's zone
+	      account_id: # TODO: AWS account id
+	      region: # TODO: Zone in which your container image should live. Match your cluster's zone
 	      # TODO: Get AWS credentials that can push to ECR, in same format as ~/.aws/credentials
 	      # then put them in secrets/aws-ecr-config.cfg
 	      service_key: aws-ecr-config.cfg
@@ -33,8 +33,8 @@ Here is the ``hubploy.yaml`` file that comes with cloning hubploy-template::
 	    # Make a service key with permissions to talk to your cluster, put it in secrets/gkee-key.json
 	    service_key: gke-key.json
 	  aws:
-	    project: # TODO: AWS account id
-	    zone: # TODO: Zone or region in which your cluster is set up
+	    account_id: # TODO: AWS account id
+	    region: # TODO: Zone or region in which your cluster is set up
 	    cluster: # TODO: The name of your EKS cluster
 	    # TODO: Get AWS credentials that can access your EKS cluster, in same format as ~/.aws credentials
 	    # then put them in secrets/aws-eks-config.cfg
@@ -82,13 +82,13 @@ rename this file, but you will also need put the new filename here.
 aws
 ^^^
 
-project
-"""""""
+account_id
+""""""""""
 
 AWS account ID
 
-zone
-""""
+region
+""""""
 
 The zone in which your ECR image will live. This should match the zone where your cluster will 
 live. 
@@ -142,8 +142,8 @@ You can rename this file, but you will also need put the new filename here.
 aws
 ---
 
-project
-^^^^^^^
+account_id
+^^^^^^^^^^
 
 AWS account ID
 
@@ -152,8 +152,8 @@ cluster
 
 The name of the EKS cluster you will create.
 
-zone
-^^^^
+region
+^^^^^^
 
 Zone or region this cluster will sit in.
 

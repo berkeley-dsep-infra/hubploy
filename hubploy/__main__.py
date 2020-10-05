@@ -115,13 +115,15 @@ def main():
             else:
                 build_images = all_images
 
-            print(f"Building {len(build_images)} images")
+            print(f"Images found: {len(build_images)}")
             for image in build_images:
                 if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
                     print(f"Building image {image.name}")
                     image.build(not args.no_cache)
                     if args.push:
                         image.push()
+                else:
+                    print(f"{image.name} does not require building")
 
     elif args.command == 'deploy':
         with auth.cluster_auth(args.deployment):

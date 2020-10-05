@@ -94,7 +94,7 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
-def registry_auth_aws(deployment, project, zone, service_key=None, role_arn=None):
+def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn=None):
     """
     Setup AWS authentication to ECR container registry
 
@@ -105,7 +105,7 @@ def registry_auth_aws(deployment, project, zone, service_key=None, role_arn=None
         raise Exception('AWS authentication requires either a service key or the use of a role')
 
     try:
-        registry = f'{project}.dkr.ecr.{zone}.amazonaws.com'
+        registry = f'{account_id}.dkr.ecr.{region}.amazonaws.com'
 
         if service_key:
             # Get credentials from standard location
@@ -281,7 +281,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     yield
 
 
-def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_arn=None):
+def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, role_arn=None):
     """
     Setup AWS authentication with service_key or with a role
 
@@ -324,7 +324,7 @@ def cluster_auth_aws(deployment, project, cluster, zone, service_key=None, role_
 
         subprocess.check_call([
             'aws', 'eks', 'update-kubeconfig',
-            '--name', cluster, '--region', zone
+            '--name', cluster, '--region', region
         ])
 
         yield
