@@ -110,30 +110,30 @@ Hub Customizations
 
 You can customize your hub in two major ways:
 
-#. Customize the hub image. `repo2docker`_ is used to build the image, so you can put any of the `
-   supported configuration files`_ under ``deployments/<hub-image>/image``. You *must* make a git 
+#. Customize the hub image. `repo2docker`_ is used to build the image, so you can put any of the
+   `supported configuration files`_ under ``deployments/<hub-image>/image``. You *must* make a git 
    commit after modifying this for ``hubploy build <hub-name> --push --check-registry`` to work, 
    since it uses the commit hash as the image tag.
 
 #. Customize hub configuration with various YAML files.
 
    * ``hub/values.yaml`` is common to *all* hubs that exist in this repo (multiple hubs can live 
-   under ``deployments/``).
+     under ``deployments/``).
 
    * ``deployments/<hub-name>/config/common.yaml`` is where most of the config specific to each 
-   hub should go. Examples include memory / cpu limits, home directory definitions, etc
+     hub should go. Examples include memory / cpu limits, home directory definitions, etc
 
    * ``deployments/<hub-name>/config/staging.yaml`` and 
-   ``deployments/<hub-name>/config/prod.yaml`` 
-   are files specific to the staging & prod versions of the hub. These should be *as minimal as 
-   possible*. Ideally, only DNS entries, IP addresses, should be here.
+     ``deployments/<hub-name>/config/prod.yaml`` 
+     are files specific to the staging & prod versions of the hub. These should be *as minimal as 
+     possible*. Ideally, only DNS entries, IP addresses, should be here.
 
    * ``deployments/<hub-name>/secrets/staging.yaml`` and 
-   ``deployments/<hub-name>/secrets/prod.yaml`` 
-   should contain information that mustn't be public. This would be proxy / hub secret 
-   tokens, any authentication tokens you have, etc. These files *must* be protected by something 
-   like `git-crypt <https://github.com/AGWA/git-crypt>`_ or 
-   `sops <https://github.com/mozilla/sops>`_.
+     ``deployments/<hub-name>/secrets/prod.yaml`` 
+     should contain information that mustn't be public. This would be proxy / hub secret 
+     tokens, any authentication tokens you have, etc. These files *must* be protected by something 
+     like `git-crypt <https://github.com/AGWA/git-crypt>`_ or 
+     `sops <https://github.com/mozilla/sops>`_.
 
 
 You can customize the staging hub, deploy it with ``hubploy deploy <hub-name> hub staging``, and 
