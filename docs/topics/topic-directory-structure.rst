@@ -67,7 +67,8 @@ Hubploy takes in secrets for credentialing via the ``.cfg`` files. You can renam
 just be sure to put the proper names into ``hubploy.yaml``.
 
 The image folder can have additional files depending on how you are building the image. See more 
-in the image building how-to.
+in the image building how-to. If you are not specifying ``images`` in your ``hubploy.yaml`` file,
+the ``images/`` folder can be deleted.
 
 
 Hub Folder

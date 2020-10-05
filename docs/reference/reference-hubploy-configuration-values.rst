@@ -46,6 +46,8 @@ The various values are described below.
 images
 ======
 
+The entire ``images`` block is optional. If you don't need it, comment it out or delete it.
+
 image_name
 ----------
 
