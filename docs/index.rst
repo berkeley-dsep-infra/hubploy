@@ -11,7 +11,7 @@ Hubploy workflow
 ================
 
 **Every change to your hub configuration must be made via a pull request
-to your git repository**. Guided by principles of `continuous deliver <https://continuousdelivery.com/>`_,
+to your git repository**. Guided by principles of `continuous delivery <https://continuousdelivery.com/>`_,
 this informs hubploy's design.
 
 Components
