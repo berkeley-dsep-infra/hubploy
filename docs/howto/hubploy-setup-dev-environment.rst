@@ -41,8 +41,8 @@ should be reflected the next time you run a ``hubploy`` command.
 Using a Custom Hubploy Locally
 ==============================
 
-Hubploy can normally be installed via ``pip install hubploy``, but using a custom version of 
-Hubploy will require different installation methods.
+Hubploy can be installed via ``pip install hubploy``, but this version is very out-of-date.
+Using a custom version of Hubploy will require different installation methods.
 
 If you are just using your custom Hubploy locally, you can link it with ``pip``. Go to the top 
 folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
@@ -52,6 +52,11 @@ folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
 You can then make changes to your local Hubploy files and rerun Hubploy commands in the other 
 folder for quick development.
 
+`hubploy` can also be installed at any specific commit with the following line in a
+`requirements.txt` file:
+::
+
+  git+https://github.com/yuvipanda/hubploy@<commit-hash>
 
 Building a Custom Hubploy on DockerHub
 ======================================
