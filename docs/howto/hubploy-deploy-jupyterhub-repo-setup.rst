@@ -207,7 +207,7 @@ repository. We would eventually like to use something like
 `sops <https://github.com/mozilla/sops>`_
 but for now...
 
-1# Install git-crypt. You can get it from brew or your package manager.
+#. Install git-crypt. You can get it from brew or your package manager.
 
 #. In your repo, initialize it.
 
