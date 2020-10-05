@@ -128,8 +128,7 @@ You can customize your hub in two major ways:
    should contain information that mustn't be public. This would be proxy / hub secret 
    tokens, any authentication tokens you have, etc. These files *must* be protected by something 
    like `git-crypt <https://github.com/AGWA/git-crypt>`_ or 
-   `sops <https://github.com/mozilla/sops>`_. 
-   **THIS REPO TEMPLATE DOES NOT HAVE THIS PROTECTION SET UP YET**
+   `sops <https://github.com/mozilla/sops>`_.
 
 
 You can customize the staging hub, deploy it with ``hubploy deploy <hub-name> hub staging``, and 
