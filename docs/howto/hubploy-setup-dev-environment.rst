@@ -22,7 +22,8 @@ build and deploy.
 
 If you don't have such a configuration set up, we recommend setting one up using the 
 `hubploy template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the 
-how-to on Deploying a JupyterHub with Hubploy (link later).
+How-To guide
+`Deploying a JupyterHub with Hubploy <https://hubploy.readthedocs.io/en/latest/howto/hubploy-deploy-jupyterhub-repo-setup.html>`_.
 
 
 Modifying Hubploy Files
