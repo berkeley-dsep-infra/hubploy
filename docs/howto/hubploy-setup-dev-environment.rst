@@ -14,20 +14,15 @@ making a custom Hubploy image for your own use or contributing to the Hubploy re
 Prerequisites
 ===========================
 
-To start, you really only need ``git`` to clone the repository. Methodology for testing Hubploy is 
-limited right now but my recommendation is that you have a working JupyterHub configuration that 
-you can try to build / deploy.
+To start, fork the `main Hubploy repository <https://github.com/yuvipanda/hubploy>`_
+and then clone your fork. This will enable easier setup for pull requests and
+independent development. Methodology for testing Hubploy is limited right now but it is
+recommendation that you have a working JupyterHub configuration so you can try to
+build and deploy.
 
 If you don't have such a configuration set up, we recommend setting one up using the 
 `hubploy template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the 
 how-to on Deploying a JupyterHub with Hubploy (link later).
-
-If you don't need to push your custom Hubploy anywhere (not recommended), you can just download 
-hubploy with ``git clone https://github.com/yuvipanda/hubploy.git``.
-
-Most use-cases will require that you have a hosted repository for Hubploy, so you should fork the 
-`main Hubploy repository <https://github.com/yuvipanda/hubploy>`_ and then clone your fork 
-(recommended).
 
 
 Modifying Hubploy Files
