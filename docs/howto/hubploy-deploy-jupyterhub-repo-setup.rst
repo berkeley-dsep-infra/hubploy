@@ -91,9 +91,9 @@ Fill in the Minimum Config Details
 
 You need to find all things marked TODO and fill them in. In particular,
 
-1. ``hubploy.yaml`` needs information about where your docker registry & kubernetes cluster is, 
+#. ``hubploy.yaml`` needs information about where your docker registry & kubernetes cluster is, 
    and paths to access keys as well.
-2. ``secrets/prod.yaml`` and ``secrets/staging.yaml`` require secure random keys you can generate 
+#. ``secrets/prod.yaml`` and ``secrets/staging.yaml`` require secure random keys you can generate 
    and fill in.
 
 If you want to try deploying to staging now, that is fine! Hub Customization can come later as you 
