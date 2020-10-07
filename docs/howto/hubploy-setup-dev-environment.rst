@@ -94,3 +94,6 @@ Contributing to Hubploy
 
 If you have your own fork of Hubploy, and have a feature that would be generally useful, feel free 
 to join the dicussions in the Issues section or contribute a PR!
+
+For more details, see the full
+`contribution guide <https://hubploy.readthedocs.io/en/latest/reference/contribution-guide.html>`_.
