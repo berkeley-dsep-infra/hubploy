@@ -37,7 +37,7 @@ Local Usage
 ===========
 
 To use this environment variable on a local installation of ``hubploy``,
-use the command from your terminal
+use the following command from your terminal:
 
 .. code:: bash
 
@@ -48,7 +48,7 @@ GitHub Action Usage
 ===================
 
 To use this environment variable in a GitHub Action, use the following lines
-in your workflow file
+in your workflow file:
 
 .. code:: yaml
 
