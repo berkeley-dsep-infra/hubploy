@@ -36,12 +36,26 @@ does this
 Local Usage
 ===========
 
+You can use several versions of ``helm`` in local usage of ``hubploy``
+This does require that you have installed ``helm``  or are using the
+``hubploy`` Docker image on your local machine.
+
 To use this environment variable on a local installation of ``hubploy``,
 use the following command from your terminal:
 
 .. code:: bash
 
 	export HELM_EXECUTABLE=~/absolute/path/to/helm/binary
+
+For example, if you wanted to use ``helm`` v3 locally and had installed
+and moved it to ``/usr/local/bin/helm3``, you would run the following from
+your terminal:
+
+.. code:: bash
+
+	export HELM_EXECUTABLE=/usr/local/bin/helm3
+
+If you already have ``helm`` v2 installed, no extra steps are necessary.
 
 
 GitHub Action Usage
