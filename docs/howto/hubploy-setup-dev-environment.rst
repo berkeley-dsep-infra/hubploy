@@ -14,20 +14,16 @@ making a custom Hubploy image for your own use or contributing to the Hubploy re
 Prerequisites
 ===========================
 
-To start, you really only need ``git`` to clone the repository. Methodology for testing Hubploy is 
-limited right now but my recommendation is that you have a working JupyterHub configuration that 
-you can try to build / deploy.
+To start, fork the `main Hubploy repository <https://github.com/yuvipanda/hubploy>`_
+and then clone your fork. This will enable easier setup for pull requests and
+independent development. Methodology for testing Hubploy is limited right now but it is
+recommendation that you have a working JupyterHub configuration so you can try to
+build and deploy.
 
 If you don't have such a configuration set up, we recommend setting one up using the 
 `hubploy template repository <https://github.com/yuvipanda/hubploy-template>`_ and following the 
-how-to on Deploying a JupyterHub with Hubploy (link later).
-
-If you don't need to push your custom Hubploy anywhere (not recommended), you can just download 
-hubploy with ``git clone https://github.com/yuvipanda/hubploy.git``.
-
-Most use-cases will require that you have a hosted repository for Hubploy, so you should fork the 
-`main Hubploy repository <https://github.com/yuvipanda/hubploy>`_ and then clone your fork 
-(recommended).
+How-To guide
+`Deploying a JupyterHub with Hubploy <https://hubploy.readthedocs.io/en/latest/howto/hubploy-deploy-jupyterhub-repo-setup.html>`_.
 
 
 Modifying Hubploy Files
@@ -41,8 +37,8 @@ should be reflected the next time you run a ``hubploy`` command.
 Using a Custom Hubploy Locally
 ==============================
 
-Hubploy can normally be installed via ``pip install hubploy``, but using a custom version of 
-Hubploy will require different installation methods.
+Hubploy can be installed via ``pip install hubploy``, but this version is very out-of-date.
+Using a custom version of Hubploy will require different installation methods.
 
 If you are just using your custom Hubploy locally, you can link it with ``pip``. Go to the top 
 folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
@@ -51,6 +47,12 @@ folder of your ``hubploy-template`` or JupyterHub deployment repo and run::
 
 You can then make changes to your local Hubploy files and rerun Hubploy commands in the other 
 folder for quick development.
+
+`hubploy` can also be installed at any specific commit with the following line in a
+`requirements.txt` file:
+::
+
+  git+https://github.com/yuvipanda/hubploy@<commit-hash>
 
 
 Building a Custom Hubploy on DockerHub
@@ -92,3 +94,6 @@ Contributing to Hubploy
 
 If you have your own fork of Hubploy, and have a feature that would be generally useful, feel free 
 to join the dicussions in the Issues section or contribute a PR!
+
+For more details, see the full
+`contribution guide <https://hubploy.readthedocs.io/en/latest/reference/contribution-guide.html>`_.

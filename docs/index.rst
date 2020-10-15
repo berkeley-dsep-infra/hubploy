@@ -4,14 +4,15 @@ HubPloy
 
 ``hubploy`` is a suite of commandline tools and an opinionated
 repository structure for continuously deploying JupyterHubs on Kubernetes (with
-`Zero to JupyterHub <https://z2jh.jupyter.org>`_).
+`Zero to JupyterHub <https://z2jh.jupyter.org>`_). Find the ``hubploy``
+`repository <https://github.com/yuvipanda/hubploy>`_ on GitHub.
 
 
 Hubploy workflow
 ================
 
 **Every change to your hub configuration must be made via a pull request
-to your git repository**. Guided by principles of `continuous deliver <https://continuousdelivery.com/>`_,
+to your git repository**. Guided by principles of `continuous delivery <https://continuousdelivery.com/>`_,
 this informs hubploy's design.
 
 Components
