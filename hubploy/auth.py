@@ -108,16 +108,15 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
         registry = f'{account_id}.dkr.ecr.{region}.amazonaws.com'
 
         if service_key:
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+
             # Get credentials from standard location
             service_key_path = os.path.join(
                 'deployments', deployment, 'secrets', service_key
             )
-
             if not os.path.isfile(service_key_path):
                 raise FileNotFoundError(
                     f'The service_key file {service_key_path} does not exist')
-
-            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
 
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
@@ -138,6 +137,10 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
                 json.dump(config, f)
 
         elif role_arn:
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
             # this doesn't come back in the sts client response
             role_session_name = 'registry'
 
@@ -146,10 +149,6 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
                 RoleArn=role_arn,
                 RoleSessionName=role_session_name
             )
-
-            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
-            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
-            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
 
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
@@ -294,17 +293,21 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
 
     try:
         if service_key:
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+
             # Get credentials from standard location
             service_key_path = os.path.join(
                 'deployments', deployment, 'secrets', service_key
             )
 
-            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
-
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
         elif role_arn:
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
             # this doesn't come back in the sts client response
             role_session_name = 'cluster'
 
@@ -313,10 +316,6 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
                 RoleArn=role_arn,
                 RoleSessionName=role_session_name
             )
-
-            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
-            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
-            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
 
             creds = assumed_role_object['Credentials']
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
