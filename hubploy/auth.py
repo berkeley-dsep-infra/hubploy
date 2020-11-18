@@ -141,13 +141,10 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
             original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
             original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
 
-            # this doesn't come back in the sts client response
-            role_session_name = 'registry'
-
             sts_client = boto3.client('sts')
             assumed_role_object = sts_client.assume_role(
                 RoleArn=role_arn,
-                RoleSessionName=role_session_name
+                RoleSessionName="hubploy-registry-auth"
             )
 
             creds = assumed_role_object['Credentials']
@@ -308,13 +305,10 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
             original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
             original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
 
-            # this doesn't come back in the sts client response
-            role_session_name = 'cluster'
-
             sts_client = boto3.client('sts')
             assumed_role_object=sts_client.assume_role(
                 RoleArn=role_arn,
-                RoleSessionName=role_session_name
+                RoleSessionName="hubploy-cluster-auth"
             )
 
             creds = assumed_role_object['Credentials']
