@@ -101,8 +101,8 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
     This changes *global machine state* on where docker can push to!
     """
 
-    if not service_key and not role_arn:
-        raise Exception('AWS authentication requires either a service key or the use of a role')
+    if service_key and role_arn:
+        raise Exception("AWS authentication support either service_key or role_arn to be configured, but not both.")
 
     try:
         registry = f'{account_id}.dkr.ecr.{region}.amazonaws.com'
@@ -137,7 +137,7 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
             with open(docker_config, 'w') as f:
                 json.dump(config, f)
 
-        else:
+        elif role_arn:
             # this doesn't come back in the sts client response
             role_session_name = 'registry'
 
@@ -146,7 +146,6 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
                 RoleArn=role_arn,
                 RoleSessionName=role_session_name
             )
-
 
             original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
             original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
@@ -157,13 +156,15 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
 
+        else:
+            raise Exception('AWS authentication requires either service_key or role_arn to be configured.')
+
         yield
 
     finally:
         if service_key:
             # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
-
         else:
             unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
             unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
@@ -288,8 +289,8 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
     This changes *global machine state* on what current kubernetes cluster is!
     """
 
-    if not service_key and not role_arn:
-        raise Exception('AWS authentication requires either a service key or the use of a role')
+    if service_key and role_arn:
+        raise Exception("AWS authentication support either service_key or role_arn to be configured, but not both.")
 
     try:
         if service_key:
@@ -303,7 +304,7 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-        else:
+        elif role_arn:
             # this doesn't come back in the sts client response
             role_session_name = 'cluster'
 
@@ -321,6 +322,9 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
             os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
             os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
             os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
+
+        else:
+            raise Exception('AWS authentication requires either service_key or role_arn to be configured.')
 
         subprocess.check_call([
             'aws', 'eks', 'update-kubeconfig',
