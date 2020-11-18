@@ -154,8 +154,10 @@ def deploy(
 
     helm_secret_files = [f for f in [
         # Support for secrets in same repo
+        os.path.join('deployments', deployment, 'secrets', 'common.yaml'),
         os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
         # Support for secrets in a submodule repo
+        os.path.join('secrets', 'deployments', deployment, 'secrets', 'common.yaml'),
         os.path.join('secrets', 'deployments', deployment, 'secrets', f'{environment}.yaml'),
     ] if os.path.exists(f)]
 
