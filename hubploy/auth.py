@@ -121,21 +121,6 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
-            # Requires amazon-ecr-credential-helper to already be installed
-            # this adds necessary line to authenticate docker with ecr
-            docker_config_dir = os.path.expanduser('~/.docker')
-            os.makedirs(docker_config_dir, exist_ok=True)
-            docker_config = os.path.join(docker_config_dir, 'config.json')
-            if os.path.exists(docker_config):
-                with open(docker_config, 'r') as f:
-                    config = json.load(f)
-            else:
-                config = {}
-
-            config.setdefault('credHelpers', {})[registry] = 'ecr-login'
-            with open(docker_config, 'w') as f:
-                json.dump(config, f)
-
         elif role_arn:
             original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
             original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
@@ -154,6 +139,21 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
 
         else:
             raise Exception('AWS authentication requires either service_key or role_arn to be configured.')
+
+        # Requires amazon-ecr-credential-helper to already be installed
+        # this adds necessary line to authenticate docker with ecr
+        docker_config_dir = os.path.expanduser('~/.docker')
+        os.makedirs(docker_config_dir, exist_ok=True)
+        docker_config = os.path.join(docker_config_dir, 'config.json')
+        if os.path.exists(docker_config):
+            with open(docker_config, 'r') as f:
+                config = json.load(f)
+        else:
+            config = {}
+
+        config.setdefault('credHelpers', {})[registry] = 'ecr-login'
+        with open(docker_config, 'w') as f:
+            json.dump(config, f)
 
         yield
 
