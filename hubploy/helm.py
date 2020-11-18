@@ -28,7 +28,7 @@ from kubernetes.client import CoreV1Api, rest
 from kubernetes.client.models import V1Namespace, V1ObjectMeta
 
 from hubploy.config import get_config
-from hubploy.auth import decrypt_file
+from hubploy.auth import decrypt_file, cluster_auth
 
 
 HELM_EXECUTABLE = os.environ.get('HELM_EXECUTABLE', 'helm')
@@ -173,6 +173,8 @@ def deploy(
     with ExitStack() as stack:
         decrypted_secret_files = [stack.enter_context(decrypt_file(f)) for f in helm_secret_files]
 
+        # Just in time for k8s access, activate the cluster credentials
+        stack.enter_context(cluster_auth(deployment))
         helm_upgrade(
             name,
             namespace,
