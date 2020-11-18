@@ -296,6 +296,9 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
             service_key_path = os.path.join(
                 'deployments', deployment, 'secrets', service_key
             )
+            if not os.path.isfile(service_key_path):
+                raise FileNotFoundError(
+                    f'The service_key file {service_key_path} does not exist')
 
             # Set env variable for credential file location
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
