@@ -30,16 +30,16 @@ RUN cd /tmp && \
 
 # Install SOPS
 RUN cd /tmp && \
-    curl -sSL https://github.com/mozilla/sops/releases/download/v3.5.0/sops_3.5.0_amd64.deb -o sops.deb && \
+    curl -sSL https://github.com/mozilla/sops/releases/download/v3.6.1/sops_3.6.1_amd64.deb -o sops.deb && \
     dpkg -i ./sops.deb && \
     rm sops.deb
 
 # Download helm v2/v3 to helm2/helm3 and symlink helm2 to helm. Make hubploy use
 # a specific binary with HELM_EXECUTABLE environment variable.
 RUN cd /tmp && mkdir helm && \
-    curl -sSL https://get.helm.sh/helm-v2.16.9-linux-amd64.tar.gz | tar -xzf - -C helm && \
+    curl -sSL https://get.helm.sh/helm-v2.17.0-linux-amd64.tar.gz | tar -xzf - -C helm && \
     mv helm/linux-amd64/helm /usr/local/bin/helm2 && \
-    curl -sSL https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz | tar -xzf - -C helm && \
+    curl -sSL https://get.helm.sh/helm-v3.4.1-linux-amd64.tar.gz | tar -xzf - -C helm && \
     mv helm/linux-amd64/helm /usr/local/bin/helm3 && \
     rm -rf helm && \
     ln -s /usr/local/bin/helm2 /usr/local/bin/helm
