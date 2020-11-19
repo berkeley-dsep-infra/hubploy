@@ -94,6 +94,9 @@ def registry_auth_gcloud(deployment, project, service_key):
     yield
 
 
+# FIXME: Refactor registry_auth_aws and cluster_auth_aws to use the same logic
+#        of updating environment variables. Making use of a contextlib.ExitStack
+#        is probably sensible.
 def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn=None):
     """
     Setup AWS authentication to ECR container registry
@@ -140,6 +143,7 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
         else:
             raise Exception('AWS authentication requires either service_key or role_arn to be configured.')
 
+        # FIXME: Use a temporary docker config
         # Requires amazon-ecr-credential-helper to already be installed
         # this adds necessary line to authenticate docker with ecr
         docker_config_dir = os.path.expanduser('~/.docker')
@@ -159,7 +163,6 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
 
     finally:
         if service_key:
-            # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
         else:
             unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
@@ -331,9 +334,7 @@ def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, 
 
     finally:
         if service_key:
-            # Unset env variable for credential file location
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
-
         else:
             unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
             unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
