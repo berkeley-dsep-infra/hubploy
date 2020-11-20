@@ -1,7 +1,7 @@
 import argparse
 import hubploy
 import sys
-from hubploy import helm, auth, commitrange
+from hubploy import helm, auth, commitrange, utils
 
 
 def main():
@@ -118,8 +118,8 @@ def main():
             print(f"Images found: {len(build_images)}")
             for image in build_images:
                 if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
-                    print(f"Building image {image.name}")
                     image.build(not args.no_cache)
+                    utils.print_installed_packages(image.image_spec)
                     if args.push:
                         image.push()
                 else:

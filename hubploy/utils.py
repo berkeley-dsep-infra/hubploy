@@ -3,6 +3,9 @@ Utils to extract information (last_modified_commit, path_touched) from the git
 history.
 """
 import subprocess
+import docker
+import shlex
+from contextlib import contextmanager
 
 
 def first_alpha(s):
@@ -75,3 +78,46 @@ def is_commit(ref):
         return True
     except subprocess.CalledProcessError:
         return False
+
+@contextmanager
+def start_container(image_spec):
+    """
+    Context manager to start a container to perform operations on it
+
+    Yields a container object that can be used to run commands. The
+    container will be stopped & removed on exit.
+    """
+    client = docker.from_env()
+    container = client.containers.run(image_spec, [
+        "/bin/bash", "-c", "trap : TERM INT; sleep infinity & wait"
+    ], detach=True)
+    try:
+        yield container
+    finally:
+        container.stop()
+        container.remove()
+
+
+def print_installed_packages(image_spec):
+    """
+    Print list of installed packages in image
+
+    Currently prints packages installed with:
+    - apt
+    - conda
+    - pip
+    - R
+    """
+    commands = [
+        'env',
+        'apt list --installed',
+        'conda list --export',
+        'pip freeze',
+        'R --quiet -e "installed.packages()[,c(1, 3)]"'
+    ]
+
+    with start_container(image_spec) as container:
+        for c in commands:
+            print(f'Executing {c}')
+            _, output = container.exec_run(['/bin/bash',  '-l', '-c', c])
+            print(output.decode())
