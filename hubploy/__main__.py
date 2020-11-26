@@ -123,7 +123,7 @@ def main():
                     if args.push:
                         image.push()
                 else:
-                    print(f"{image.name} does not require building")
+                    print(f"{image.image_spec} does not require building")
 
     elif args.command == 'deploy':
         helm.deploy(
