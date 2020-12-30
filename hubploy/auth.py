@@ -63,13 +63,22 @@ def registry_auth_dockercfg(deployment, filename):
         'deployments', deployment, 'secrets', filename
     )
 
+    # DOCKER_CONFIG actually points to a *directory*, not a file.
+    # It should contain a `.config.json` file with our auth config
+    # We decrypt our docker config file, symlink it inside a new
+    # temporary directory that we'll set DOCKER_CONFIG to
+    # Our temporary directory (with symlink) and the decrypted
+    # file will be deleted via the contextmanagers.
     orig_dockercfg = os.environ.get('DOCKER_CONFIG', None)
-    with decrypt_file(encrypted_file_path) as auth_file_path:
-        try:
-            os.environ['DOCKER_CONFIG'] = auth_file_path
-            yield
-        finally:
-            unset_env_var('DOCKER_CONFIG', orig_dockercfg)
+    with tempfile.TemporaryDirectory() as d:
+        with decrypt_file(encrypted_file_path) as auth_file_path:
+            try:
+                dst_path = os.path.join(d.name, 'config.json')
+                os.symlink(auth_file_path, dst_path)
+                os.environ['DOCKER_CONFIG'] = d.name
+                yield
+            finally:
+                unset_env_var('DOCKER_CONFIG', orig_dockercfg)
 
 def registry_auth_gcloud(deployment, project, service_key):
     """
