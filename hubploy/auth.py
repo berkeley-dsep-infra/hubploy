@@ -73,9 +73,9 @@ def registry_auth_dockercfg(deployment, filename):
     with tempfile.TemporaryDirectory() as d:
         with decrypt_file(encrypted_file_path) as auth_file_path:
             try:
-                dst_path = os.path.join(d.name, 'config.json')
+                dst_path = os.path.join(d, 'config.json')
                 os.symlink(auth_file_path, dst_path)
-                os.environ['DOCKER_CONFIG'] = d.name
+                os.environ['DOCKER_CONFIG'] = d
                 yield
             finally:
                 unset_env_var('DOCKER_CONFIG', orig_dockercfg)
