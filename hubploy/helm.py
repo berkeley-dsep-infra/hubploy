@@ -20,7 +20,6 @@ configuration located in accordance to hubploy conventions.
 """
 import itertools
 import os
-import shutil
 import subprocess
 import kubernetes.config
 from contextlib import ExitStack
@@ -47,15 +46,9 @@ def helm_upgrade(
     atomic,
     cleanup_on_fail
 ):
-    # Clear charts and do a helm dep up before installing
-    # Clearing charts is important so we don't deploy charts that
-    # have been removed from requirements.yaml
-    # FIXME: verify if this is actually true
-    if os.path.exists(chart):
-        shutil.rmtree(os.path.join(chart, 'charts'), ignore_errors=True)
-        subprocess.check_call([
-            HELM_EXECUTABLE, 'dep', 'up'
-        ], cwd=chart)
+    subprocess.check_call([
+        HELM_EXECUTABLE, 'dep', 'up'
+    ], cwd=chart)
 
     # Create namespace explicitly, since helm3 removes support for it
     # See https://github.com/helm/helm/issues/6794
