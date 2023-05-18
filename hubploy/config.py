@@ -26,7 +26,7 @@ class LocalImage:
     """
     A docker image that can be built from a local filesystem source
     """
-    def __init__(self, name, path, helm_substitution_path='jupyterhub.singleuser.image'):
+    def __init__(self, name, path, repo2docker={}, helm_substitution_path='jupyterhub.singleuser.image'):
         """
         Create an Image from a local path
 
@@ -44,6 +44,7 @@ class LocalImage:
 
         self.tag = utils.last_modified_commit(path)
         self.path = path
+        self.repo2docker = repo2docker
         self.helm_substitution_path = helm_substitution_path
         self.image_spec = f'{self.name}:{self.tag}'
 
@@ -54,6 +55,8 @@ class LocalImage:
         self.r2d.user_id = 1000
         self.r2d.user_name = 'jovyan'
         self.r2d.target_repo_dir = '/srv/repo'
+        if 'base_image' in self.repo2docker:
+            self.r2d.base_image = repo2docker.get('base_image')
         self.r2d.initialize()
 
     @property
