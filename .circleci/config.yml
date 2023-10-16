@@ -18,6 +18,7 @@ jobs:
       - run:
           name: setup dependencies
           command: |
+            pyenv install 3.11.0
             pyenv global 3.11.0
             python3 -m venv venv
             source venv/bin/activate
