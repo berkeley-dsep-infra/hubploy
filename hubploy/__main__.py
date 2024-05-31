@@ -86,6 +86,12 @@ def main():
         action='store_true'
     )
 
+    argparser.add_argument(
+        '--debug',
+        action='store_true',
+        help='Enable helm debug output'
+    )
+
     args = argparser.parse_args()
 
     try:
@@ -103,8 +109,6 @@ def main():
                 print("Could not auto-detect commit-range, and --check-registry is not set", file=sys.stderr)
                 print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
                 sys.exit(1)
-
-
 
         with auth.registry_auth(args.deployment, args.push, args.check_registry):
 
@@ -138,6 +142,7 @@ def main():
             args.force,
             args.atomic,
             args.cleanup_on_fail,
+            args.debug
         )
 
 if __name__ == '__main__':

@@ -44,7 +44,8 @@ def helm_upgrade(
     timeout,
     force,
     atomic,
-    cleanup_on_fail
+    cleanup_on_fail,
+    debug
 ):
     subprocess.check_call([
         HELM_EXECUTABLE, 'dep', 'up'
@@ -89,6 +90,8 @@ def helm_upgrade(
         cmd += ['--atomic']
     if cleanup_on_fail:
         cmd += ['--cleanup-on-fail']
+    if debug:
+        cmd += ['--debug']
     cmd += itertools.chain(*[['-f', cf] for cf in config_files])
     cmd += itertools.chain(*[['--set', v] for v in config_overrides_implicit])
     cmd += itertools.chain(*[['--set-string', v] for v in config_overrides_string])
@@ -106,7 +109,8 @@ def deploy(
     timeout=None,
     force=False,
     atomic=False,
-    cleanup_on_fail=False
+    cleanup_on_fail=False,
+    debug=False
 ):
     """
     Deploy a JupyterHub.
@@ -180,4 +184,5 @@ def deploy(
             force,
             atomic,
             cleanup_on_fail,
+            debug,
         )
