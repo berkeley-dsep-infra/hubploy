@@ -87,6 +87,7 @@ def main():
     )
 
     argparser.add_argument(
+        '-d',
         '--debug',
         action='store_true',
         help='Enable helm debug output'
