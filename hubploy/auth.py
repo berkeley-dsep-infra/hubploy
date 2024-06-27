@@ -11,8 +11,6 @@ logger = logging.getLogger(__name__)
 import json
 import os
 import subprocess
-#import shutil
-#import pathlib
 import tempfile
 import boto3
 
