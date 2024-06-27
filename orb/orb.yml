@@ -12,7 +12,7 @@ jobs:
         default: false
 
     docker:
-      - image: python:3.7-slim-buster
+      - image: python:3.11.9-slim-bullseye
 
     working_directory: ~/repo
 
@@ -25,9 +25,9 @@ jobs:
 
       - restore_cache:
           keys:
-            - v3.7-dependencies-{{ checksum "requirements.txt" }}
+            - v3.11-dependencies-{{ checksum "requirements.txt" }}
             # fallback to using the latest cache if no exact match is found
-            - v3.7-dependencies-
+            - v3.11-dependencies-
 
       - run:
           name: install dependencies
