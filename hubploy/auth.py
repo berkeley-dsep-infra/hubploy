@@ -5,11 +5,14 @@ with-statements.
 
 Current cloud providers supported: gcloud, aws, and azure.
 """
+import logging
+logger = logging.getLogger(__name__)
+
 import json
 import os
 import subprocess
-import shutil
-import pathlib
+#import shutil
+#import pathlib
 import tempfile
 import boto3
 
@@ -18,7 +21,7 @@ from contextlib import contextmanager
 
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
-yaml = YAML(typ='rt')
+yaml = YAML(typ="rt")
 
 
 @contextmanager
@@ -31,28 +34,29 @@ def registry_auth(deployment, push, check_registry):
 
         config = get_config(deployment)
 
-        if 'images' in config and 'registry' in config['images']:
-            registry = config['images']['registry']
-            provider = registry.get('provider')
-            if provider == 'gcloud':
+        if "images" in config and "registry" in config["images"]:
+            registry = config["images"]["registry"]
+            provider = registry.get("provider")
+            if provider == "gcloud":
                 yield from registry_auth_gcloud(
-                    deployment, **registry['gcloud']
+                    deployment, **registry["gcloud"]
                 )
-            elif provider == 'aws':
+            elif provider == "aws":
                 yield from registry_auth_aws(
-                    deployment, **registry['aws']
+                    deployment, **registry["aws"]
                 )
-            elif provider == 'azure':
+            elif provider == "azure":
                 yield from registry_auth_azure(
-                    deployment, **registry['azure']
+                    deployment, **registry["azure"]
                 )
-            elif provider == 'dockerconfig':
+            elif provider == "dockerconfig":
                 yield from registry_auth_dockercfg(
-                    deployment, **registry['dockerconfig']
+                    deployment, **registry["dockerconfig"]
                 )
             else:
                 raise ValueError(
-                    f'Unknown provider {provider} found in hubploy.yaml')
+                    f"Unknown provider {provider} found in hubploy.yaml"
+                )
     else:
         # We actually don't need to auth, but we are yielding anyway
         # contextlib.contextmanager does not like it when you don't yield
@@ -60,7 +64,7 @@ def registry_auth(deployment, push, check_registry):
 
 def registry_auth_dockercfg(deployment, filename):
     encrypted_file_path = os.path.join(
-        'deployments', deployment, 'secrets', filename
+        "deployments", deployment, "secrets", filename
     )
 
     # DOCKER_CONFIG actually points to a *directory*, not a file.
@@ -69,16 +73,16 @@ def registry_auth_dockercfg(deployment, filename):
     # temporary directory that we'll set DOCKER_CONFIG to
     # Our temporary directory (with symlink) and the decrypted
     # file will be deleted via the contextmanagers.
-    orig_dockercfg = os.environ.get('DOCKER_CONFIG', None)
+    orig_dockercfg = os.environ.get("DOCKER_CONFIG", None)
     with tempfile.TemporaryDirectory() as d:
         with decrypt_file(encrypted_file_path) as auth_file_path:
             try:
-                dst_path = os.path.join(d, 'config.json')
+                dst_path = os.path.join(d, "config.json")
                 os.symlink(auth_file_path, dst_path)
-                os.environ['DOCKER_CONFIG'] = d
+                os.environ["DOCKER_CONFIG"] = d
                 yield
             finally:
-                unset_env_var('DOCKER_CONFIG', orig_dockercfg)
+                unset_env_var("DOCKER_CONFIG", orig_dockercfg)
 
 def registry_auth_gcloud(deployment, project, service_key):
     """
@@ -87,17 +91,17 @@ def registry_auth_gcloud(deployment, project, service_key):
     This changes *global machine state* on where docker can push to!
     """
     encrypted_service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
+        "deployments", deployment, "secrets", service_key
     )
     with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
         subprocess.check_call([
-            'gcloud', 'auth',
-            'activate-service-account',
-            '--key-file', os.path.abspath(decrypted_service_key_path)
+            "gcloud", "auth",
+            "activate-service-account",
+            "--key-file", os.path.abspath(decrypted_service_key_path)
         ])
 
     subprocess.check_call([
-        'gcloud', 'auth', 'configure-docker'
+        "gcloud", "auth", "configure-docker"
     ])
 
     yield
@@ -121,11 +125,11 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
 
             # Get path to service_key and validate its around
             service_key_path = os.path.join(
-                'deployments', deployment, 'secrets', service_key
+                "deployments", deployment, "secrets", service_key
             )
             if not os.path.isfile(service_key_path):
                 raise FileNotFoundError(
-                    f'The service_key file {service_key_path} does not exist')
+                    f"The service_key file {service_key_path} does not exist")
 
             os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
 
@@ -134,16 +138,16 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
             original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
             original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
 
-            sts_client = boto3.client('sts')
+            sts_client = boto3.client("sts")
             assumed_role_object = sts_client.assume_role(
                 RoleArn=role_arn,
                 RoleSessionName=role_session_name
             )
 
-            creds = assumed_role_object['Credentials']
-            os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
-            os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
-            os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
+            creds = assumed_role_object["Credentials"]
+            os.environ["AWS_ACCESS_KEY_ID"] = creds["AccessKeyId"]
+            os.environ["AWS_SECRET_ACCESS_KEY"] = creds["SecretAccessKey"]
+            os.environ["AWS_SESSION_TOKEN"] = creds["SessionToken"]
 
         # return until context exits
         yield
@@ -152,9 +156,9 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
         if service_key:
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
         elif role_arn:
-            unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
-            unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
-            unset_env_var('AWS_SESSION_TOKEN', original_session_token)
+            unset_env_var("AWS_ACCESS_KEY_ID", original_access_key_id)
+            unset_env_var("AWS_SECRET_ACCESS_KEY", original_secret_access_key)
+            unset_env_var("AWS_SESSION_TOKEN", original_session_token)
 
 
 def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn=None):
@@ -167,18 +171,18 @@ def registry_auth_aws(deployment, account_id, region, service_key=None, role_arn
         # FIXME: Use a temporary docker config
         # Requires amazon-ecr-credential-helper to already be installed
         # this adds necessary line to authenticate docker with ecr
-        docker_config_dir = os.path.expanduser('~/.docker')
+        docker_config_dir = os.path.expanduser("~/.docker")
         os.makedirs(docker_config_dir, exist_ok=True)
-        docker_config = os.path.join(docker_config_dir, 'config.json')
+        docker_config = os.path.join(docker_config_dir, "config.json")
         if os.path.exists(docker_config):
-            with open(docker_config, 'r') as f:
+            with open(docker_config, "r") as f:
                 config = json.load(f)
         else:
             config = {}
 
-        registry = f'{account_id}.dkr.ecr.{region}.amazonaws.com'
-        config.setdefault('credHelpers', {})[registry] = 'ecr-login'
-        with open(docker_config, 'w') as f:
+        registry = f"{account_id}.dkr.ecr.{region}.amazonaws.com"
+        config.setdefault("credHelpers", {})[registry] = "ecr-login"
+        with open(docker_config, "w") as f:
             json.dump(config, f)
 
         yield
@@ -204,112 +208,153 @@ def registry_auth_azure(deployment, resource_group, registry, auth_file):
     """
 
     # parse Azure auth file
-    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    auth_file_path = os.path.join("deployments", deployment, "secrets", auth_file)
     with open(auth_file_path) as f:
         auth = yaml.load(f)
 
     # log in
     subprocess.check_call([
-        'az', 'login', '--service-principal',
-        '--user', auth['appId'],
-        '--tenant', auth['tenant'],
-        '--password', auth['password']
+        "az", "login", "--service-principal",
+        "--user", auth["appId"],
+        "--tenant", auth["tenant"],
+        "--password", auth["password"]
     ])
 
     # log in to ACR
     subprocess.check_call([
-        'az', 'acr', 'login',
-        '--name', registry
+        "az", "acr", "login",
+        "--name", registry
     ])
 
     yield
 
 
 @contextmanager
-def cluster_auth(deployment):
+def cluster_auth(deployment, debug=False, verbose=False):
     """
     Do appropriate cluster authentication for given deployment
     """
-    config = get_config(deployment)
+    if verbose:
+        logger.setLevel(logging.INFO)
+    elif debug:
+        logger.setLevel(logging.DEBUG)
 
-    if 'cluster' in config:
-        cluster = config['cluster']
-        provider = cluster.get('provider')
+    logger.info(f"Getting auth config for {deployment}")
+    config = get_config(deployment, debug, verbose)
+
+    if "cluster" in config:
+        cluster = config["cluster"]
+        provider = cluster.get("provider")
         orig_kubeconfig = os.environ.get("KUBECONFIG", None)
+
         try:
-            if provider == 'kubeconfig':
+            if provider == "kubeconfig":
+                logger.info(
+                    f"Attempting to authenticate to {cluster} with " + 
+                    "existing kubeconfig."
+                )
                 encrypted_kubeconfig_path = os.path.join(
-                    'deployments', deployment, 'secrets', cluster['kubeconfig']['filename']
+                    "deployments",
+                    deployment,
+                    "secrets",
+                    cluster["kubeconfig"]["filename"]
                 )
                 with decrypt_file(encrypted_kubeconfig_path) as kubeconfig_path:
                     os.environ["KUBECONFIG"] = kubeconfig_path
                     yield
             else:
-
                 # Temporarily kubeconfig file
                 with tempfile.NamedTemporaryFile() as temp_kubeconfig:
                     os.environ["KUBECONFIG"] = temp_kubeconfig.name
+                    logger.info(
+                        f"Attempting to authenticate with {provider}..."
+                    )
 
-                    if provider == 'gcloud':
+                    if provider == "gcloud":
                         yield from cluster_auth_gcloud(
-                            deployment, **cluster['gcloud']
+                            deployment, **cluster["gcloud"]
                         )
-                    elif provider == 'aws':
+                    elif provider == "aws":
                         yield from cluster_auth_aws(
-                            deployment, **cluster['aws']
+                            deployment, **cluster["aws"]
                         )
-                    elif provider == 'azure':
+                    elif provider == "azure":
                         yield from cluster_auth_azure(
-                            deployment, **cluster['azure']
+                            deployment, **cluster["azure"]
                         )
                     else:
                         raise ValueError(
-                            f'Unknown provider {provider} found in hubploy.yaml')
+                            f"Unknown provider {provider} found in " + 
+                            "hubploy.yaml"
+                        )
         finally:
             unset_env_var("KUBECONFIG", orig_kubeconfig)
 
 
-def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
+def cluster_auth_gcloud(
+        deployment,
+        project,
+        cluster,
+        zone,
+        service_key
+    ):
     """
     Setup GKE authentication with service_key
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
     encrypted_service_key_path = os.path.join(
-        'deployments', deployment, 'secrets', service_key
+        "deployments", deployment, "secrets", service_key
     )
     with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
         subprocess.check_call([
-            'gcloud', 'auth',
-            'activate-service-account',
-            '--key-file', os.path.abspath(decrypted_service_key_path)
+            "gcloud", "auth",
+            "activate-service-account",
+            "--key-file", os.path.abspath(decrypted_service_key_path)
         ])
 
     subprocess.check_call([
-        'gcloud', 'container', 'clusters',
-        f'--zone={zone}',
-        f'--project={project}',
-        'get-credentials', cluster
+        "gcloud", "container", "clusters",
+        f"--zone={zone}",
+        f"--project={project}",
+        "get-credentials", cluster
     ])
 
     yield
 
 
-def cluster_auth_aws(deployment, account_id, cluster, region, service_key=None, role_arn=None):
+def cluster_auth_aws(
+        deployment,
+        account_id,
+        cluster,
+        region,
+        service_key=None,
+        role_arn=None
+    ):
     """
     Setup AWS authentication with service_key or with a role
 
     This changes *global machine state* on what current kubernetes cluster is!
     """
-    with _auth_aws(deployment, service_key=service_key, role_arn=role_arn, role_session_name="hubploy-cluster-auth"):
+    with _auth_aws(
+        deployment,
+        service_key=service_key,
+        role_arn=role_arn,
+        role_session_name="hubploy-cluster-auth"
+    ):
         subprocess.check_call([
-            'aws', 'eks', 'update-kubeconfig',
-            '--name', cluster, '--region', region
+            "aws", "eks", "update-kubeconfig",
+            "--name", cluster, "--region", region
         ])
         yield
 
 
-def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
+def cluster_auth_azure(
+        deployment,
+        resource_group,
+        cluster,
+        auth_file
+    ):
     """
 
     Azure authentication for AKS
@@ -323,37 +368,44 @@ def cluster_auth_azure(deployment, resource_group, cluster, auth_file):
         cluster: cluster_name
         auth_file: azure_auth_file.yaml
 
-    The azure_service_principal.json file should have the following
-    keys: appId, tenant, password. This is the format produced
-    by the az command when creating a service principal.
+    The azure_service_principal.json file should have the following keys:
+    appId, tenant, password.
+ 
+    This is the format produced by the az command when creating a service
+    principal.
     """
 
     # parse Azure auth file
-    auth_file_path = os.path.join('deployments', deployment, 'secrets', auth_file)
+    auth_file_path = os.path.join(
+        "deployments", deployment, "secrets", auth_file
+    )
     with open(auth_file_path) as f:
         auth = yaml.load(f)
 
     # log in
     subprocess.check_call([
-        'az', 'login', '--service-principal',
-        '--user', auth['appId'],
-        '--tenant', auth['tenant'],
-        '--password', auth['password']
+        "az", "login", "--service-principal",
+        "--user", auth["appId"],
+        "--tenant", auth["tenant"],
+        "--password", auth["password"]
     ])
 
     # get cluster credentials
     subprocess.check_call([
-        'az', 'aks', 'get-credentials',
-        '--name', cluster,
-        '--resource-group', resource_group
+        "az", "aks", "get-credentials",
+        "--name", cluster,
+        "--resource-group", resource_group
     ])
 
     yield
 
 def unset_env_var(env_var, old_env_var_value):
     """
-    If the old environment variable's value exists, replace the current one with the old one
-    If the old environment variable's value does not exist, delete the current one
+    If the old environment variable's value exists, replace the current one
+    with the old one.
+
+    If the old environment variable's value does not exist, delete the current
+    one.
     """
 
     if env_var in os.environ:
@@ -375,28 +427,28 @@ def decrypt_file(encrypted_path):
     with open(encrypted_path) as f:
         _, ext = os.path.splitext(encrypted_path)
         # Support the (clearly wrong) people who use .yml instead of .yaml
-        if ext == '.yaml' or ext == '.yml':
+        if ext == ".yaml" or ext == ".yml":
             try:
                 encrypted_data = yaml.load(f)
             except ScannerError:
                 yield encrypted_path
                 return
-        elif ext == '.json':
+        elif ext == ".json":
             try:
                 encrypted_data = json.load(f)
             except json.JSONDecodeError:
                 yield encrypted_path
                 return
 
-    if 'sops' not in encrypted_data:
+    if "sops" not in encrypted_data:
         yield encrypted_path
         return
 
     # If file has a `sops` key, we assume it's sops encrypted
     with tempfile.NamedTemporaryFile() as f:
         subprocess.check_call([
-            'sops',
-            '--output', f.name,
-            '--decrypt', encrypted_path
+            "sops",
+            "--output", f.name,
+            "--decrypt", encrypted_path
         ])
         yield f.name

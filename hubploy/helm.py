@@ -6,7 +6,6 @@ Expects the following configuration layout from cwd:
 chart-name/ (Helm deployment chart)
 deployments/
   - deployment-name
-    - image/ (optional)
     - secrets/
       - prod.yaml
       - staging.yaml
@@ -18,10 +17,14 @@ deployments/
 Util to deploy a Helm chart (deploy) given hubploy configuration and Helm chart
 configuration located in accordance to hubploy conventions.
 """
+import logging
+logger = logging.getLogger(__name__)
+
 import itertools
+import kubernetes.config
 import os
 import subprocess
-import kubernetes.config
+
 from contextlib import ExitStack
 from kubernetes.client import CoreV1Api, rest
 from kubernetes.client.models import V1Namespace, V1ObjectMeta
@@ -29,8 +32,7 @@ from kubernetes.client.models import V1Namespace, V1ObjectMeta
 from hubploy.config import get_config
 from hubploy.auth import decrypt_file, cluster_auth
 
-
-HELM_EXECUTABLE = os.environ.get('HELM_EXECUTABLE', 'helm')
+HELM_EXECUTABLE = os.environ.get("HELM_EXECUTABLE", "helm")
 
 
 def helm_upgrade(
@@ -45,15 +47,27 @@ def helm_upgrade(
     force,
     atomic,
     cleanup_on_fail,
-    debug
-):
+    debug,
+    verbose,
+    helm_debug,
+    dry_run
+    ):
+    if verbose:
+        logger.setLevel(logging.INFO)
+    elif debug:
+        logger.setLevel(logging.DEBUG)
+
+    logger.info(f"Deploying {name} in namespace {namespace}")
+
+    logger.debug(f"Running helm dep up in subdirectory '{chart}'")
     subprocess.check_call([
-        HELM_EXECUTABLE, 'dep', 'up'
+        HELM_EXECUTABLE, "dep", "up"
     ], cwd=chart)
 
     # Create namespace explicitly, since helm3 removes support for it
     # See https://github.com/helm/helm/issues/6794
     # helm2 only creates the namespace if it doesn't exist, so we should be fine
+    logger.debug("Loading kubeconfig for k8s access")
     kubeconfig = os.environ.get("KUBECONFIG", None)
 
     try:
@@ -61,6 +75,9 @@ def helm_upgrade(
     except:
         kubernetes.config.load_incluster_config()
 
+    logger.debug(
+        f"Checking for namespace {namespace} and creating if it doesn't exist"
+    )
     api = CoreV1Api()
     try:
         api.read_namespace(namespace)
@@ -68,35 +85,44 @@ def helm_upgrade(
         if e.status == 404:
             # Create namespace
             print(f"Namespace {namespace} does not exist, creating it...")
-            api.create_namespace(V1Namespace(metadata=V1ObjectMeta(name=namespace)))
+            api.create_namespace(
+                V1Namespace(
+                    metadata=V1ObjectMeta(name=namespace)
+                )
+            )
         else:
             raise
 
     cmd = [
         HELM_EXECUTABLE,
-        'upgrade',
-        '--wait',
-        '--install',
-        '--namespace', namespace,
-        name, chart,
+        "upgrade",
+        "--wait",
+        "--install",
+        "--namespace",
+        namespace,
+        name,
+        chart,
     ]
     if version:
-        cmd += ['--version', version]
+        cmd += ["--version", version]
     if timeout:
-        cmd += ['--timeout', timeout]
+        cmd += ["--timeout", timeout]
     if force:
-        cmd += ['--force']
+        cmd += ["--force"]
     if atomic:
-        cmd += ['--atomic']
+        cmd += ["--atomic"]
     if cleanup_on_fail:
-        cmd += ['--cleanup-on-fail']
-    if debug:
-        cmd += ['--debug']
-    cmd += itertools.chain(*[['-f', cf] for cf in config_files])
-    cmd += itertools.chain(*[['--set', v] for v in config_overrides_implicit])
-    cmd += itertools.chain(*[['--set-string', v] for v in config_overrides_string])
-    subprocess.check_call(cmd)
+        cmd += ["--cleanup-on-fail"]
+    if helm_debug:
+        cmd += ["--debug"]
+    if dry_run:
+        cmd += ["--dry-run"]
+    cmd += itertools.chain(*[["-f", cf] for cf in config_files])
+    cmd += itertools.chain(*[["--set", v] for v in config_overrides_implicit])
+    cmd += itertools.chain(*[["--set-string", v] for v in config_overrides_string])
 
+    logger.debug(f"Running helm upgrade with command: {cmd}")
+    subprocess.check_call(cmd)
 
 def deploy(
     deployment,
@@ -110,8 +136,11 @@ def deploy(
     force=False,
     atomic=False,
     cleanup_on_fail=False,
-    debug=False
-):
+    debug=False,
+    verbose=False,
+    helm_debug=False,
+    dry_run=False
+    ):
     """
     Deploy a JupyterHub.
 
@@ -120,58 +149,84 @@ def deploy(
     {chart}/ (Helm deployment chart)
     deployments/
     - {deployment}
-        - image/ (optional)
         - secrets/
             - {environment}.yaml
         - config/
           - common.yaml
           - {environment}.yaml
 
-    A docker image from deployments/{deployment}/image is expected to be
-    already built and available with imagebuilder.
+    A docker image is expected to have already been built and tagged with
+    "name" containing the full path to the repo, image name and tag.
+
     `jupyterhub.singleuser.image.tag` will be automatically set to this image
     tag.
     """
+    if verbose:
+        logger.setLevel(logging.INFO)
+    elif debug:
+        logger.setLevel(logging.DEBUG)
+
+    logger.info(f"Deploying {deployment} to {environment}")
+
     if helm_config_overrides_implicit is None:
         helm_config_overrides_implicit = []
     if helm_config_overrides_string is None:
         helm_config_overrides_string = []
 
-    config = get_config(deployment)
-
-    name = f'{deployment}-{environment}'
+    logger.info(f"Getting image and deployment config for {deployment}")
+    config = get_config(deployment, debug, verbose)
+    name = f"{deployment}-{environment}"
 
     if namespace is None:
         namespace = name
     helm_config_files = [f for f in [
-        os.path.join('deployments', deployment, 'config', 'common.yaml'),
-        os.path.join('deployments', deployment, 'config', f'{environment}.yaml'),
+        os.path.join(
+            "deployments", deployment, "config", "common.yaml"
+        ),
+        os.path.join(
+            "deployments", deployment, "config", f"{environment}.yaml"
+        ),
     ] if os.path.exists(f)]
-
+    logger.debug(f"Using helm config files: {helm_config_files}")
 
     helm_secret_files = [f for f in [
         # Support for secrets in same repo
-        os.path.join('deployments', deployment, 'secrets', f'{environment}.yaml'),
+        os.path.join(
+            "deployments", deployment, "secrets", f"{environment}.yaml"
+        ),
         # Support for secrets in a submodule repo
-        os.path.join('secrets', 'deployments', deployment, 'secrets', f'{environment}.yaml'),
+        os.path.join(
+            "secrets", "deployments", deployment, "secrets", f"{environment}.yaml"
+        ),
     ] if os.path.exists(f)]
+    logger.debug(f"Using helm secret files: {helm_secret_files}")
 
-
-
-    if config.get('images'):
-        for image in config['images']['images']:
+    if config.get("images"):
+        for image in config["images"]["images"]:
+            logger.info(
+                f"Using image {image.name}:{image.tag} for " +
+                f"{image.helm_substitution_path}"
+            )
             # We can support other charts that wrap z2jh by allowing various
             # config paths where we set image tags and names.
             # We default to one sublevel, but we can do multiple levels.
-            # With the PANGEO chart, we this could be set to `pangeo.jupyterhub.singleuser.image`
-            helm_config_overrides_string.append(f'{image.helm_substitution_path}.tag={image.tag}')
-            helm_config_overrides_string.append(f'{image.helm_substitution_path}.name={image.name}')
+            helm_config_overrides_string.append(
+                f"{image.helm_substitution_path}.tag={image.tag}"
+            )
+            helm_config_overrides_string.append(
+                f"{image.helm_substitution_path}.name={image.name}"
+            )
 
     with ExitStack() as stack:
-        decrypted_secret_files = [stack.enter_context(decrypt_file(f)) for f in helm_secret_files]
+        decrypted_secret_files = [
+            stack.enter_context(decrypt_file(f)) for f in helm_secret_files
+        ]
 
         # Just in time for k8s access, activate the cluster credentials
-        stack.enter_context(cluster_auth(deployment))
+        logger.debug(f"Activating cluster credentials for deployment " +
+                     f"{deployment}"
+        )
+        stack.enter_context(cluster_auth(deployment, debug, verbose))
         helm_upgrade(
             name,
             namespace,
@@ -185,4 +240,7 @@ def deploy(
             atomic,
             cleanup_on_fail,
             debug,
+            verbose,
+            helm_debug,
+            dry_run
         )
