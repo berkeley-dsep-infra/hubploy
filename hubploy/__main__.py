@@ -14,7 +14,7 @@ def main():
 
     deploy_parser = subparsers.add_parser(
         "deploy",
-        help="Deploy a chart to the given environment"
+        help="Deploy a chart to the given environment."
     )
 
     deploy_parser.add_argument(
@@ -74,7 +74,7 @@ def main():
         "-D",
         "--helm-debug",
         action="store_true",
-        help="Helm debug only."
+        help="Enable Helm debug output."
     )
     argparser.add_argument(
         "-v",
