@@ -93,9 +93,15 @@ def get_config(deployment, debug, verbose):
             for i in image_list:
                 if ":" in i["name"]:
                     image_name, tag = i["name"].split(":")
+                    logger.info(
+                        f"Tag for {image_name}: {tag}"
+                    )
                 else:
                     image_name = i["name"]
                     tag = "latest"
+                    logger.info(
+                        f"No tag specified for {image_name}. Using 'latest'"
+                    )
                 images.append({
                     "name": image_name,
                     "tag": tag,
