@@ -228,7 +228,14 @@ def deploy(
             # We default to one sublevel, but we can do multiple levels.
             if image_overrides is not None:
                 override = image_overrides[count]
-                override_image, override_tag = override.split(":")
+                try:
+                    override_image, override_tag = override.split(":")
+                except:
+                    print(
+                        f"ERROR: You must specify a tag when overriding images: {override}"
+                    )
+                    exit(1)
+
                 print(
                     f"Overriding image {image.name}:{image.tag} to " +
                     f"{override_image}:{override_tag}"
