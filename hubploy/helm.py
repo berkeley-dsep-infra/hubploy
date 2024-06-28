@@ -218,7 +218,7 @@ def deploy(
                 if ":" not in override:
                     raise ValueError(
                         f"Image override must be in the format " +
-                        f"<path_to_image/image_name>:<tag>. Got {override}"
+                        f"<path_to_image/image_name>:<tag>. Got: {override}"
                     )
 
         count = 0
@@ -228,14 +228,6 @@ def deploy(
             # We default to one sublevel, but we can do multiple levels.
             if image_overrides is not None:
                 override = image_overrides[count]
-                try:
-                    override_image, override_tag = override.split(":")
-                except:
-                    print(
-                        f"ERROR: You must specify a tag when overriding images: {override}"
-                    )
-                    exit(1)
-
                 print(
                     f"Overriding image {image.name}:{image.tag} to " +
                     f"{override_image}:{override_tag}"
