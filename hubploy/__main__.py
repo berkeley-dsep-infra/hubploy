@@ -91,7 +91,6 @@ def main():
         help=textwrap.dedent("""\
         Override one or more images and tags to deploy. Format is:\n
         <path_to_image1/image_name>:<tag1> <path_to_image2/image_name>:<tag2> ...\n \n
-
         IMPORTANT: The order of images passed in must match the order in which
         they appear in hubploy.yaml and separated by spaces without quotes.
         """)
@@ -104,14 +103,13 @@ def main():
     elif args.debug:
         logger.setLevel(logging.DEBUG)
     logger.info(args)
-    logger.info(args.image_overrides)
-    
+
     # Attempt to load the config early, fail if it doesn't exist or is invalid
     try:
         config = hubploy.config.get_config(
             args.deployment,
-            args.debug,
-            args.verbose
+            debug=False,
+            verbose=False
         )
     except hubploy.config.DeploymentNotFoundError as e:
         print(e, file=sys.stderr)

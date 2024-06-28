@@ -50,7 +50,7 @@ class RemoteImage:
         self.helm_substitution_path = helm_substitution_path
         self.image_spec = f"{self.name}:{self.tag}"
 
-def get_config(deployment, debug, verbose):
+def get_config(deployment, debug=False, verbose=False):
     """
     Returns hubploy.yaml configuration as a Python dictionary if it exists for
     a given deployment, and also augments it with a set of RemoteImage objects
@@ -72,9 +72,9 @@ def get_config(deployment, debug, verbose):
         config = yaml.load(f)
 
     if "images" in config:
-        # A single image is being deployed
         images_config = config["images"]
 
+        # A single image is being deployed
         if "image_name" in images_config:
             if ":" in images_config["image_name"]:
                 image_name, tag = images_config["image_name"].split(":")
@@ -106,6 +106,7 @@ def get_config(deployment, debug, verbose):
                     "name": image_name,
                     "tag": tag,
                 })
+
         config["images"]["images"] = [RemoteImage(**i) for i in images]
 
         # Backwards compatibility checker for images block

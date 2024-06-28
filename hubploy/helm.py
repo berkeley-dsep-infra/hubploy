@@ -204,12 +204,15 @@ def deploy(
 
     if config.get("images"):
         if image_overrides is not None:
+            print(f"Image overrides found: {image_overrides}")
             num_images = len(config["images"]["images"])
             num_overrides = len(image_overrides)
+
             if num_images != num_overrides:
                 raise ValueError(
                     f"Number of image overrides ({num_overrides}) must match " +
-                    f"number of images in hubploy.yaml ({num_images})"
+                    f"number of images found in " +
+                    f"deployments/{deployment}/hubploy.yaml ({num_images})"
                 )
             for override in image_overrides:
                 if ":" not in override:
@@ -217,24 +220,25 @@ def deploy(
                         f"Image override must be in the format " +
                         f"<path_to_image/image_name>:<tag>. Got {override}"
                     )
+
         count = 0
         for image in config["images"]["images"]:
-            logger.info(
-                f"Using image {image.name}:{image.tag} for " +
-                f"{image.helm_substitution_path}"
-            )
             # We can support other charts that wrap z2jh by allowing various
             # config paths where we set image tags and names.
             # We default to one sublevel, but we can do multiple levels.
             if image_overrides is not None:
                 override = image_overrides[count]
-                image_name, tag = override.split(":")
-                image.name = image_name
-                image.tag = tag
-                logger.info(
-                    f"Overriding image {image.helm_substitution_path} to " +
-                    f"{image.name}:{image.tag}"
+                override_image, override_tag = override.split(":")
+                print(
+                    f"Overriding image {image.name}:{image.tag} to " +
+                    f"{override_image}:{override_tag}"
                 )
+                image.name = override_image
+                image.tag = override_tag
+            logger.info(
+                f"Using image {image.name}:{image.tag} for " +
+                f"{image.helm_substitution_path}"
+            )
             helm_config_overrides_string.append(
                 f"{image.helm_substitution_path}.tag={image.tag}"
             )
@@ -242,7 +246,6 @@ def deploy(
                 f"{image.helm_substitution_path}.name={image.name}"
             )
             count+=1
-        print(helm_config_overrides_string)
 
     with ExitStack() as stack:
         decrypted_secret_files = [
