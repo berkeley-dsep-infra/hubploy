@@ -7,7 +7,7 @@ logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 import hubploy
-from hubploy import helm, auth, commitrange
+from hubploy import helm
 
 from argparse import RawTextHelpFormatter
 
