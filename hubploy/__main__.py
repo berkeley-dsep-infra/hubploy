@@ -92,7 +92,8 @@ def main():
         Override one or more images and tags to deploy. Format is:\n
         <path_to_image1/image_name>:<tag1> <path_to_image2/image_name>:<tag2> ...\n \n
         IMPORTANT: The order of images passed in must match the order in which
-        they appear in hubploy.yaml and separated by spaces without quotes.
+        they appear in hubploy.yaml and separated by spaces without quotes. You
+        must always specify a tag when overriding images.
         """)
     )
 
