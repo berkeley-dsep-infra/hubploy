@@ -14,13 +14,12 @@ import subprocess
 import tempfile
 import boto3
 
-from hubploy.config import get_config
 from contextlib import contextmanager
-
+from hubploy.config import get_config
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
-yaml = YAML(typ="rt")
 
+yaml = YAML(typ="rt")
 
 @contextmanager
 def registry_auth(deployment, push, check_registry):
