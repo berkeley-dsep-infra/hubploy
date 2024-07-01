@@ -54,8 +54,8 @@ def main():
     deploy_parser.add_argument(
         "--namespace",
         default=None,
-        help="Helm option:  the namespace to deploy to. If not specified, " +
-        "the namespace will be derived from the environment"
+        help="Helm option: the namespace to deploy to. If not specified, " +
+        "the namespace will be derived from the environment argument."
     )
     deploy_parser.add_argument(
         "--set",
@@ -66,19 +66,19 @@ def main():
     deploy_parser.add_argument(
         "--set-string",
         action="append",
-        help="Helm option:  set STRING values on the command line (can " +
+        help="Helm option: set STRING values on the command line (can " +
         "specify multiple or separate values with commas: key1=val1,key2=val2)"
     )
     deploy_parser.add_argument(
         "--version",
-        help="Helm option:  specify a version constraint for the chart " +
+        help="Helm option: specify a version constraint for the chart " +
         "version to use. This constraint can be a specific tag (e.g. 1.1.1) " +
         "or it may reference a valid range (e.g. ^2.0.0). If this is not " +
         "specified, the latest version is used."
     )
     deploy_parser.add_argument(
         "--timeout",
-        help="Helm option:  time in seconds to wait for any individual " +
+        help="Helm option: time in seconds to wait for any individual " +
         "Kubernetes operation (like Jobs for hooks, etc).  Defaults to 300 " +
         "seconds."
     )
@@ -89,14 +89,14 @@ def main():
     deploy_parser.add_argument(
         "--atomic",
         action="store_true",
-        help="Helm option:  if set, upgrade process rolls back changes made " +
+        help="Helm option: if set, upgrade process rolls back changes made " +
         "in case of failed upgrade. The --wait flag will be set automatically " +
         "if --atomic is used."
     )
     deploy_parser.add_argument(
         "--cleanup-on-fail",
         action="store_true",
-        help="Helm option:  allow deletion of new resources created in this " +
+        help="Helm option: allow deletion of new resources created in this " +
         "upgrade when upgrade fails."
     )
     deploy_parser.add_argument(
