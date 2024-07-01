@@ -84,7 +84,8 @@ def main():
     )
     deploy_parser.add_argument(
         "--force",
-        action="store_true"
+        action="store_true",
+        help="Helm option: force resource updates through a replacement strategy."
     )
     deploy_parser.add_argument(
         "--atomic",
