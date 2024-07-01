@@ -40,32 +40,48 @@ def main():
     )
 
     deploy_parser.add_argument(
-        "deployment"
+        "deployment",
+        help="The name of the hub to deploy."
     )
     deploy_parser.add_argument(
-        "chart"
+        "chart",
+        help="The path to the main hub chart."
     )
     deploy_parser.add_argument(
         "environment",
-        choices=["develop", "staging", "prod"]
+        choices=["develop", "staging", "prod"],
+        help="The environment to deploy to."
     )
     deploy_parser.add_argument(
         "--namespace",
-        default=None
+        default=None,
+        help="Helm option:  the namespace to deploy to. If not specified, " +
+        "the namespace will be derived from the environment"
     )
     deploy_parser.add_argument(
         "--set",
         action="append",
+        help="Helm option:  set values on the command line (can specify " +
+        "multiple or separate values with commas: key1=val1,key2=val2)"
     )
     deploy_parser.add_argument(
         "--set-string",
         action="append",
+        help="Helm option:  set STRING values on the command line (can " +
+        "specify multiple or separate values with commas: key1=val1,key2=val2)"
     )
     deploy_parser.add_argument(
         "--version",
+        help="Helm option:  specify a version constraint for the chart " +
+        "version to use. This constraint can be a specific tag (e.g. 1.1.1) " +
+        "or it may reference a valid range (e.g. ^2.0.0). If this is not " +
+        "specified, the latest version is used."
     )
     deploy_parser.add_argument(
-        "--timeout"
+        "--timeout",
+        help="Helm option:  time in seconds to wait for any individual " +
+        "Kubernetes operation (like Jobs for hooks, etc).  Defaults to 300 " +
+        "seconds."
     )
     deploy_parser.add_argument(
         "--force",
@@ -73,11 +89,16 @@ def main():
     )
     deploy_parser.add_argument(
         "--atomic",
-        action="store_true"
+        action="store_true",
+        help="Helm option:  if set, upgrade process rolls back changes made " +
+        "in case of failed upgrade. The --wait flag will be set automatically " +
+        "if --atomic is used."
     )
     deploy_parser.add_argument(
         "--cleanup-on-fail",
-        action="store_true"
+        action="store_true",
+        help="Helm option:  allow deletion of new resources created in this " +
+        "upgrade when upgrade fails."
     )
     deploy_parser.add_argument(
         "--dry-run",
@@ -88,13 +109,15 @@ def main():
     deploy_parser.add_argument(
         "--image-overrides",
         nargs="+",
-        help=textwrap.dedent("""\
+        help=textwrap.dedent(
+            """\
         Override one or more images and tags to deploy. Format is:\n
         <path_to_image1/image_name>:<tag1> <path_to_image2/image_name>:<tag2> ...\n \n
         IMPORTANT: The order of images passed in must match the order in which
         they appear in hubploy.yaml and separated by spaces without quotes. You
         must always specify a tag when overriding images.
-        """)
+        """
+        )
     )
 
     args = argparser.parse_args()
