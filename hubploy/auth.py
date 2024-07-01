@@ -5,20 +5,19 @@ with-statements.
 
 Current cloud providers supported: gcloud, aws, and azure.
 """
-import logging
-logger = logging.getLogger(__name__)
-
+import boto3
 import json
+import logging
 import os
 import subprocess
 import tempfile
-import boto3
 
 from contextlib import contextmanager
 from hubploy.config import get_config
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
 
+logger = logging.getLogger(__name__)
 yaml = YAML(typ="rt")
 
 @contextmanager

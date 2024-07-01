@@ -4,11 +4,10 @@ returns it embedded with a set of LocalImage objects with filesystem paths made
 absolute.
 """
 import logging
-logger = logging.getLogger(__name__)
-
 import os
 from ruamel.yaml import YAML
 
+logger = logging.getLogger(__name__)
 yaml = YAML(typ="safe")
 
 class DeploymentNotFoundError(Exception):

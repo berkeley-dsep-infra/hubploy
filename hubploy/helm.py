@@ -17,11 +17,9 @@ deployments/
 Util to deploy a Helm chart (deploy) given hubploy configuration and Helm chart
 configuration located in accordance to hubploy conventions.
 """
-import logging
-logger = logging.getLogger(__name__)
-
 import itertools
 import kubernetes.config
+import logging
 import os
 import subprocess
 
@@ -32,6 +30,7 @@ from kubernetes.client.models import V1Namespace, V1ObjectMeta
 from hubploy.config import get_config
 from hubploy.auth import decrypt_file, cluster_auth
 
+logger = logging.getLogger(__name__)
 HELM_EXECUTABLE = os.environ.get("HELM_EXECUTABLE", "helm")
 
 
@@ -58,7 +57,6 @@ def helm_upgrade(
         logger.setLevel(logging.DEBUG)
 
     logger.info(f"Deploying {name} in namespace {namespace}")
-
     logger.debug(f"Running helm dep up in subdirectory '{chart}'")
     subprocess.check_call([
         HELM_EXECUTABLE, "dep", "up"
@@ -67,14 +65,16 @@ def helm_upgrade(
     # Create namespace explicitly, since helm3 removes support for it
     # See https://github.com/helm/helm/issues/6794
     # helm2 only creates the namespace if it doesn't exist, so we should be fine
-    logger.debug("Loading kubeconfig for k8s access")
     kubeconfig = os.environ.get("KUBECONFIG", None)
-
+    logger.debug("Loading kubeconfig for k8s access")
     try:
         kubernetes.config.load_kube_config(config_file=kubeconfig)
-    except:
+        logger.info(f"Loaded kubeconfig: {kubeconfig}")
+    except Exception as e:
+        logger.info(f"Failed to load kubeconfig {kubeconfig} with " +
+                    f"exception:\n{e}\nTrying in-cluster config...")
         kubernetes.config.load_incluster_config()
-
+        logger.info("Loaded in-cluster kubeconfig")
     logger.debug(
         f"Checking for namespace {namespace} and creating if it doesn't exist"
     )
@@ -211,13 +211,13 @@ def deploy(
             if num_images != num_overrides:
                 raise ValueError(
                     f"Number of image overrides ({num_overrides}) must match " +
-                    f"number of images found in " +
+                    "number of images found in " +
                     f"deployments/{deployment}/hubploy.yaml ({num_images})"
                 )
             for override in image_overrides:
                 if ":" not in override:
                     raise ValueError(
-                        f"Image override must be in the format " +
+                        "Image override must be in the format " +
                         f"<path_to_image/image_name>:<tag>. Got: {override}"
                     )
 
@@ -228,6 +228,7 @@ def deploy(
             # We default to one sublevel, but we can do multiple levels.
             if image_overrides is not None:
                 override = image_overrides[count]
+                override_image, override_tag = override.split(":")
                 print(
                     f"Overriding image {image.name}:{image.tag} to " +
                     f"{override_image}:{override_tag}"
@@ -252,7 +253,7 @@ def deploy(
         ]
 
         # Just in time for k8s access, activate the cluster credentials
-        logger.debug(f"Activating cluster credentials for deployment " +
+        logger.debug("Activating cluster credentials for deployment " +
                      f"{deployment}"
         )
         stack.enter_context(cluster_auth(deployment, debug, verbose))
@@ -271,6 +272,5 @@ def deploy(
             debug,
             verbose,
             helm_debug,
-            dry_run,
-            image_overrides
+            dry_run
         )

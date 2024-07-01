@@ -1,15 +1,14 @@
 import argparse
+import hubploy
 import logging
 import sys
 import textwrap
 
+from hubploy import helm
+from argparse import RawTextHelpFormatter
+
 logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 logger = logging.getLogger(__name__)
-
-import hubploy
-from hubploy import helm
-
-from argparse import RawTextHelpFormatter
 
 def main():
     argparser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
@@ -135,6 +134,10 @@ def main():
             debug=False,
             verbose=False
         )
+        if not config:
+            raise hubploy.config.DeploymentNotFoundError(
+                "Deployment '{}' not found in hubploy.yaml".format(args.deployment)
+            )
     except hubploy.config.DeploymentNotFoundError as e:
         print(e, file=sys.stderr)
         sys.exit(1)
