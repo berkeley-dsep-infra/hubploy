@@ -1,150 +1,167 @@
 import argparse
 import hubploy
+import logging
 import sys
-from hubploy import helm, auth, commitrange
+import textwrap
 
+from hubploy import helm
+from argparse import RawTextHelpFormatter
+
+logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+logger = logging.getLogger(__name__)
 
 def main():
-    argparser = argparse.ArgumentParser()
-    subparsers = argparser.add_subparsers(dest='command')
-    build_parser = subparsers.add_parser('build', help='Build an image for a given deployment')
-
-    build_parser.add_argument(
-        'deployment',
-        help='Name of deployment to build image of'
-    )
-
-    trigger_change_group = build_parser.add_mutually_exclusive_group()
-    trigger_change_group.add_argument(
-        '--commit-range',
-        help='Trigger image rebuilds only if files in image directory have changed in this git commit range',
-    )
-    # FIXME: Needs a better name?
-    trigger_change_group.add_argument(
-        '--check-registry',
-        action='store_true',
-        help="Trigger image rebuild if image with expected name and tag is not in upstream registry."
-    )
-    build_parser.add_argument(
-        '--push',
-        action='store_true',
-        help="Push image after building"
-    )
-    build_parser.add_argument(
-        '--no-cache',
-        action='store_true',
-        help="Don't pull previous image to re-use cache from"
-    )
-
-    build_parser.add_argument(
-        '--image',
-        # FIXME: Have a friendlier way to reference this
-        help='Fully qualified docker image names to build',
-        action='append'
-    )
-
-    deploy_parser = subparsers.add_parser('deploy', help='Deploy a chart to the given environment')
-
-    deploy_parser.add_argument(
-        'deployment'
-    )
-    deploy_parser.add_argument(
-        'chart'
-    )
-    deploy_parser.add_argument(
-        'environment',
-        choices=['develop', 'staging', 'prod']
-    )
-    deploy_parser.add_argument(
-        '--namespace',
-        default=None
-    )
-    deploy_parser.add_argument(
-        '--set',
-        action='append',
-    )
-    deploy_parser.add_argument(
-        '--set-string',
-        action='append',
-    )
-    deploy_parser.add_argument(
-        '--version',
-    )
-    deploy_parser.add_argument(
-        '--timeout'
-    )
-    deploy_parser.add_argument(
-        '--force',
-        action='store_true'
-    )
-    deploy_parser.add_argument(
-        '--atomic',
-        action='store_true'
-    )
-    deploy_parser.add_argument(
-        '--cleanup-on-fail',
-        action='store_true'
-    )
+    argparser = argparse.ArgumentParser(formatter_class=RawTextHelpFormatter)
+    subparsers = argparser.add_subparsers(dest="command")
 
     argparser.add_argument(
-        '-d',
-        '--debug',
-        action='store_true',
-        help='Enable helm debug output'
+        "-d",
+        "--debug",
+        action="store_true",
+        help="Enable tool debug output (not including helm debug)."
+    )
+    argparser.add_argument(
+        "-D",
+        "--helm-debug",
+        action="store_true",
+        help="Enable Helm debug output."
+    )
+    argparser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help="Enable verbose output."
+    )
+
+    deploy_parser = subparsers.add_parser(
+        "deploy",
+        help="Deploy a chart to the given environment."
+    )
+
+    deploy_parser.add_argument(
+        "deployment",
+        help="The name of the hub to deploy."
+    )
+    deploy_parser.add_argument(
+        "chart",
+        help="The path to the main hub chart."
+    )
+    deploy_parser.add_argument(
+        "environment",
+        choices=["develop", "staging", "prod"],
+        help="The environment to deploy to."
+    )
+    deploy_parser.add_argument(
+        "--namespace",
+        default=None,
+        help="Helm option: the namespace to deploy to. If not specified, " +
+        "the namespace will be derived from the environment argument."
+    )
+    deploy_parser.add_argument(
+        "--set",
+        action="append",
+        help="Helm option:  set values on the command line (can specify " +
+        "multiple or separate values with commas: key1=val1,key2=val2)"
+    )
+    deploy_parser.add_argument(
+        "--set-string",
+        action="append",
+        help="Helm option: set STRING values on the command line (can " +
+        "specify multiple or separate values with commas: key1=val1,key2=val2)"
+    )
+    deploy_parser.add_argument(
+        "--version",
+        help="Helm option: specify a version constraint for the chart " +
+        "version to use. This constraint can be a specific tag (e.g. 1.1.1) " +
+        "or it may reference a valid range (e.g. ^2.0.0). If this is not " +
+        "specified, the latest version is used."
+    )
+    deploy_parser.add_argument(
+        "--timeout",
+        help="Helm option: time in seconds to wait for any individual " +
+        "Kubernetes operation (like Jobs for hooks, etc).  Defaults to 300 " +
+        "seconds."
+    )
+    deploy_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Helm option: force resource updates through a replacement strategy."
+    )
+    deploy_parser.add_argument(
+        "--atomic",
+        action="store_true",
+        help="Helm option: if set, upgrade process rolls back changes made " +
+        "in case of failed upgrade. The --wait flag will be set automatically " +
+        "if --atomic is used."
+    )
+    deploy_parser.add_argument(
+        "--cleanup-on-fail",
+        action="store_true",
+        help="Helm option: allow deletion of new resources created in this " +
+        "upgrade when upgrade fails."
+    )
+    deploy_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Dry run the helm upgrade command. This also renders the " +
+        "chart to STDOUT."
+    )
+    deploy_parser.add_argument(
+        "--image-overrides",
+        nargs="+",
+        help=textwrap.dedent(
+            """\
+        Override one or more images and tags to deploy. Format is:\n
+        <path_to_image1/image_name>:<tag1> <path_to_image2/image_name>:<tag2> ...\n \n
+        IMPORTANT: The order of images passed in must match the order in which
+        they appear in hubploy.yaml and separated by spaces without quotes. You
+        must always specify a tag when overriding images.
+        """
+        )
     )
 
     args = argparser.parse_args()
 
+    if args.verbose:
+        logger.setLevel(logging.INFO)
+    elif args.debug:
+        logger.setLevel(logging.DEBUG)
+    logger.info(args)
+
+    # Attempt to load the config early, fail if it doesn't exist or is invalid
     try:
-        config = hubploy.config.get_config(args.deployment)
+        config = hubploy.config.get_config(
+            args.deployment,
+            debug=False,
+            verbose=False
+        )
+        if not config:
+            raise hubploy.config.DeploymentNotFoundError(
+                "Deployment '{}' not found in hubploy.yaml".format(args.deployment)
+            )
     except hubploy.config.DeploymentNotFoundError as e:
         print(e, file=sys.stderr)
         sys.exit(1)
 
-    if args.command == 'build':
-        if not (args.check_registry or args.commit_range):
-            args.commit_range = commitrange.get_commit_range()
-            if not args.commit_range:
-                # commit_range autodetection failed, and check registry isn't set
-                # FIXME: Provide an actually useful error message
-                print("Could not auto-detect commit-range, and --check-registry is not set", file=sys.stderr)
-                print("Specify --commit-range manually, or pass --check-registry", file=sys.stderr)
-                sys.exit(1)
+    helm.deploy(
+        args.deployment,
+        args.chart,
+        args.environment,
+        args.namespace,
+        args.set,
+        args.set_string,
+        args.version,
+        args.timeout,
+        args.force,
+        args.atomic,
+        args.cleanup_on_fail,
+        args.debug,
+        args.verbose,
+        args.helm_debug,
+        args.dry_run,
+        args.image_overrides
+    )
 
-        with auth.registry_auth(args.deployment, args.push, args.check_registry):
-
-            all_images = config.get('images', {}).get('images', {})
-
-            if args.image:
-                build_images = [i for i in all_images if i.name in args.image]
-            else:
-                build_images = all_images
-
-            print(f"Images found: {len(build_images)}")
-            for image in build_images:
-                if image.needs_building(check_registry=args.check_registry, commit_range=args.commit_range):
-                    print(f"Building image {image.name}")
-                    image.build(not args.no_cache)
-                    if args.push:
-                        image.push()
-                else:
-                    print(f"{image.name} does not require building")
-
-    elif args.command == 'deploy':
-        helm.deploy(
-            args.deployment,
-            args.chart,
-            args.environment,
-            args.namespace,
-            args.set,
-            args.set_string,
-            args.version,
-            args.timeout,
-            args.force,
-            args.atomic,
-            args.cleanup_on_fail,
-            args.debug
-        )
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
+
