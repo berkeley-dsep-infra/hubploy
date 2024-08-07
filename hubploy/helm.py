@@ -235,16 +235,28 @@ def deploy(
                 )
                 image.name = override_image
                 image.tag = override_tag
-            logger.info(
-                f"Using image {image.name}:{image.tag} for " +
-                f"{image.helm_substitution_path}"
-            )
-            helm_config_overrides_string.append(
-                f"{image.helm_substitution_path}.tag={image.tag}"
-            )
-            helm_config_overrides_string.append(
-                f"{image.helm_substitution_path}.name={image.name}"
-            )
+
+            if image.tag is not None:
+                logger.info(
+                    f"Using image {image.name}:{image.tag} for " +
+                    f"{image.helm_substitution_path}"
+                )
+                helm_config_overrides_string.append(
+                    f"{image.helm_substitution_path}.tag={image.tag}"
+                )
+                helm_config_overrides_string.append(
+                    f"{image.helm_substitution_path}.name={image.name}"
+                )
+            else:
+                logger.info(
+                    f"Using image {image.name} for " +
+                    f"{image.helm_substitution_path}"
+                )
+                helm_config_overrides_string.append(
+                    f"{image.helm_substitution_path}.name={image.name}"
+                )
+
+
             count+=1
 
     with ExitStack() as stack:

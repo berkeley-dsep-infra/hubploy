@@ -26,14 +26,14 @@ class RemoteImage:
     """
     def __init__(self,
                  name,
-                 tag,
+                 tag=None,
                  helm_substitution_path="jupyterhub.singleuser.image"
                 ):
         """
         Define an Image from the hubploy config
 
         name: Fully qualified name of image
-        tag: Tag of image (latest or github hash)
+        tag: Tag of image (github hash)
         helm_substitution_path: Dot separated path in a helm file that should
                                 be populated with this image spec
         """
@@ -47,7 +47,11 @@ class RemoteImage:
         self.name = name
         self.tag = tag
         self.helm_substitution_path = helm_substitution_path
-        self.image_spec = f"{self.name}:{self.tag}"
+
+        if self.tag is None:
+            self.image_spec = f"{self.name}"
+        else:
+            self.image_spec = f"{self.name}:{self.tag}"
 
 def get_config(deployment, debug=False, verbose=False):
     """
@@ -77,13 +81,12 @@ def get_config(deployment, debug=False, verbose=False):
         if "image_name" in images_config:
             if ":" in images_config["image_name"]:
                 image_name, tag = images_config["image_name"].split(":")
+                images = [{
+                    "name": image_name,
+                    "tag": tag
+                }]
             else:
-                image_name = images_config["image_name"]
-                tag = "latest"
-            images = [{
-                "name": image_name,
-                "tag": tag
-            }]
+                images = [{"name": images_config["image_name"]}]
 
         else:
             # Multiple images are being deployed
@@ -95,16 +98,12 @@ def get_config(deployment, debug=False, verbose=False):
                     logger.info(
                         f"Tag for {image_name}: {tag}"
                     )
+                    images.append({
+                        "name": image_name,
+                        "tag": tag,
+                    })
                 else:
-                    image_name = i["name"]
-                    tag = "latest"
-                    logger.info(
-                        f"No tag specified for {image_name}. Using 'latest'"
-                    )
-                images.append({
-                    "name": image_name,
-                    "tag": tag,
-                })
+                    images.append({"name": i["name"]})
 
         config["images"]["images"] = [RemoteImage(**i) for i in images]
 
