@@ -25,7 +25,9 @@ def main():
         "-D",
         "--helm-debug",
         action="store_true",
-        help="Enable Helm debug output."
+        help="Enable Helm debug output. This is not allowed to be used in a " +
+        "CI environment due to secrets being displated in plain text, and " +
+        "the script will exit."
     )
     argparser.add_argument(
         "-v",
@@ -105,7 +107,9 @@ def main():
         "--dry-run",
         action="store_true",
         help="Dry run the helm upgrade command. This also renders the " +
-        "chart to STDOUT."
+        "chart to STDOUT. This is not allowed to be used in a " +
+        "CI environment due to secrets being displated in plain text, and " +
+        "the script will exit."
     )
     deploy_parser.add_argument(
         "--image-overrides",
