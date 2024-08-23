@@ -27,7 +27,8 @@ def main():
         action="store_true",
         help="Enable Helm debug output. This is not allowed to be used in a " +
         "CI environment due to secrets being displated in plain text, and " +
-        "the script will exit."
+        "the script will exit. To enable this option, set a local environment " +
+        "varible HUBPLOY_LOCAL_DEBUG=true"
     )
     argparser.add_argument(
         "-v",
@@ -109,7 +110,8 @@ def main():
         help="Dry run the helm upgrade command. This also renders the " +
         "chart to STDOUT. This is not allowed to be used in a " +
         "CI environment due to secrets being displated in plain text, and " +
-        "the script will exit."
+        "the script will exit. To enable this option, set a local environment " +
+        "varible HUBPLOY_LOCAL_DEBUG=true"
     )
     deploy_parser.add_argument(
         "--image-overrides",
@@ -139,6 +141,14 @@ def main():
             print("--helm-debug and --dry-run are not allowed to be used in a CI environment.")
             print("Exiting...")
             sys.exit(1)
+    else:
+        if args.helm_debug or args.dry_run:
+            if os.environ.get("HUBPLOY_LOCAL_DEBUG", False):
+                print("Local debug mode enabled. Proceeding with --helm-debug and --dry-run.")
+            else:
+                print("To enable local debug mode, set a local environment variable HUBPLOY_LOCAL_DEBUG=true")
+                print("Exiting...")
+                sys.exit(1)
 
     # Attempt to load the config early, fail if it doesn't exist or is invalid
     try:
