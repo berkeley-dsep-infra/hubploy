@@ -1,6 +1,7 @@
 import argparse
 import hubploy
 import logging
+import os
 import sys
 import textwrap
 
@@ -127,6 +128,13 @@ def main():
     elif args.debug:
         logger.setLevel(logging.DEBUG)
     logger.info(args)
+
+    is_on_ci = os.environ.get("CI", False)
+    if is_on_ci:
+        if args.helm_debug or args.dry_run:
+            print("--helm-debug and --dry-run are not allowed to be used in a CI environment.")
+            print("Exiting...")
+            sys.exit(1)
 
     # Attempt to load the config early, fail if it doesn't exist or is invalid
     try:
