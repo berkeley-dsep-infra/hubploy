@@ -69,6 +69,7 @@ def get_config(deployment, debug=False, verbose=False):
         raise DeploymentNotFoundError(deployment, deployment_path)
 
     config_path = os.path.join(deployment_path, "hubploy.yaml")
+    logger.info(f"Loading hubploy config from {config_path}")
     with open(config_path) as f:
         # If config_path isn't found, this will raise a FileNotFoundError with
         # useful info

@@ -108,7 +108,8 @@ def cluster_auth_gcloud(
             "--key-file", os.path.abspath(decrypted_service_key_path)
         ]
         logger.info(f"Activating service account for {project}")
-        logger.debug(f"Running gcloud command: {gcloud_auth_command}")
+        logger.debug(f"Running gcloud command: " +
+                     " ".join(x for x in gcloud_auth_command))
         subprocess.check_call(gcloud_auth_command)
 
     gcloud_cluster_credential_command = [
@@ -118,7 +119,8 @@ def cluster_auth_gcloud(
         "get-credentials", cluster
     ]
     logger.info(f"Getting credentials for {cluster} in {zone}")
-    logger.debug(f"Running gcloud command: {gcloud_cluster_credential_command}")
+    logger.debug(f"Running gcloud command: " +
+                 " ".join(x for x in gcloud_cluster_credential_command))
     subprocess.check_call(gcloud_cluster_credential_command)
 
     yield
@@ -255,11 +257,15 @@ def decrypt_file(encrypted_path):
         ]
 
         logger.info("File is sops encrypted, decrypting...")
-        logger.debug(f"Executing: {sops_command} plus output to a temporary file")
+        logger.debug("Executing: " +
+                     " ".join(sops_command) +
+                     "(with output to a temporary file)")
         with tempfile.NamedTemporaryFile() as f:
-            subprocess.check_call([
-                "sops",
-                "--output", f.name,
-                "--decrypt", encrypted_path
-            ])
+            subprocess.check_call(
+                [
+                    "sops",
+                    "--output", f.name,
+                    "--decrypt", encrypted_path
+                ]
+            )
             yield f.name

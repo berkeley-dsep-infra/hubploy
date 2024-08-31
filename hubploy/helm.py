@@ -121,7 +121,8 @@ def helm_upgrade(
     cmd += itertools.chain(*[["--set", v] for v in config_overrides_implicit])
     cmd += itertools.chain(*[["--set-string", v] for v in config_overrides_string])
 
-    logger.debug(f"Running helm upgrade with command: {cmd}")
+    logger.info(f"Running helm upgrade on {name}.")
+    logger.debug("Helm upgrade command: " + " ".join(x for x in cmd))
     subprocess.check_call(cmd)
 
 def deploy(
@@ -266,7 +267,7 @@ def deploy(
 
         # Just in time for k8s access, activate the cluster credentials
         logger.debug("Activating cluster credentials for deployment " +
-                     f"{deployment}"
+                     f"{deployment} and performing deployment upgrade."
         )
         stack.enter_context(cluster_auth(deployment, debug, verbose))
         helm_upgrade(
