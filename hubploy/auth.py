@@ -44,6 +44,10 @@ def cluster_auth(deployment, debug=False, verbose=False):
                     f"Attempting to authenticate to {cluster} with " + 
                     "existing kubeconfig."
                 )
+                logger.debug(
+                    f"Using kubeconfig file " +
+                    "deploylemts/{deployment}/secrets/{cluster['kubeconfig']['filename']}"
+                )
                 encrypted_kubeconfig_path = os.path.join(
                     "deployments",
                     deployment,
@@ -98,18 +102,24 @@ def cluster_auth_gcloud(
         "deployments", deployment, "secrets", service_key
     )
     with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
-        subprocess.check_call([
+        gcloud_auth_command = [
             "gcloud", "auth",
             "activate-service-account",
             "--key-file", os.path.abspath(decrypted_service_key_path)
-        ])
+        ]
+        logger.info(f"Activating service account for {project}")
+        logger.debug(f"Running gcloud command: {gcloud_auth_command}")
+        subprocess.check_call(gcloud_auth_command)
 
-    subprocess.check_call([
+    gcloud_cluster_credential_command = [
         "gcloud", "container", "clusters",
         f"--zone={zone}",
         f"--project={project}",
         "get-credentials", cluster
-    ])
+    ]
+    logger.info(f"Getting credentials for {cluster} in {zone}")
+    logger.debug(f"Running gcloud command: {gcloud_cluster_credential_command}")
+    subprocess.check_call(gcloud_cluster_credential_command)
 
     yield
 
@@ -215,6 +225,7 @@ def decrypt_file(encrypted_path):
     # We must first determine if the file is using sops
     # sops files are JSON/YAML with a `sops` key. So we first check
     # if the file is valid JSON/YAML, and then if it has a `sops` key
+    logger.info(f"Decrypting {encrypted_path}")
     with open(encrypted_path) as f:
         _, ext = os.path.splitext(encrypted_path)
         # Support the (clearly wrong) people who use .yml instead of .yaml
@@ -232,14 +243,24 @@ def decrypt_file(encrypted_path):
                 return
 
     if "sops" not in encrypted_data:
+        logger.info("File is not sops encrypted, returning path")
         yield encrypted_path
         return
 
-    # If file has a `sops` key, we assume it's sops encrypted
-    with tempfile.NamedTemporaryFile() as f:
-        subprocess.check_call([
+    else:
+        # If file has a `sops` key, we assume it's sops encrypted
+        sops_command = [
             "sops",
-            "--output", f.name,
             "--decrypt", encrypted_path
-        ])
-        yield f.name
+        ]
+
+        logger.info("File is sops encrypted, decrypting...")
+        logger.debug(f"Executing: {sops_command} plus output to a temporary file")
+        with tempfile.NamedTemporaryFile() as f:
+            sops_command += ["--output", f.name]
+            subprocess.check_call([
+                "sops",
+                "--output", f.name,
+                "--decrypt", encrypted_path
+            ])
+            yield f.name
