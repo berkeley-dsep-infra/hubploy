@@ -26,7 +26,7 @@ def main():
         "--helm-debug",
         action="store_true",
         help="Enable Helm debug output. This is not allowed to be used in a " +
-        "CI environment due to secrets being displated in plain text, and " +
+        "CI environment due to secrets being displayed in plain text, and " +
         "the script will exit. To enable this option, set a local environment " +
         "varible HUBPLOY_LOCAL_DEBUG=true"
     )
