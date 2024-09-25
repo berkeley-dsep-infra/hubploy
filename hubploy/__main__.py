@@ -109,7 +109,7 @@ def main():
         action="store_true",
         help="Dry run the helm upgrade command. This also renders the " +
         "chart to STDOUT. This is not allowed to be used in a " +
-        "CI environment due to secrets being displated in plain text, and " +
+        "CI environment due to secrets being displayed in plain text, and " +
         "the script will exit. To enable this option, set a local environment " +
         "varible HUBPLOY_LOCAL_DEBUG=true"
     )
