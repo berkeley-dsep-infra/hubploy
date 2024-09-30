@@ -45,8 +45,8 @@ def cluster_auth(deployment, debug=False, verbose=False):
                     "existing kubeconfig."
                 )
                 logger.debug(
-                    f"Using kubeconfig file " +
-                    "deploylemts/{deployment}/secrets/{cluster['kubeconfig']['filename']}"
+                    "Using kubeconfig file " +
+                    f"deploylemts/{deployment}/secrets/{cluster['kubeconfig']['filename']}"
                 )
                 encrypted_kubeconfig_path = os.path.join(
                     "deployments",
@@ -108,7 +108,7 @@ def cluster_auth_gcloud(
             "--key-file", os.path.abspath(decrypted_service_key_path)
         ]
         logger.info(f"Activating service account for {project}")
-        logger.debug(f"Running gcloud command: " +
+        logger.debug("Running gcloud command: " +
                      " ".join(x for x in gcloud_auth_command))
         subprocess.check_call(gcloud_auth_command)
 
@@ -119,12 +119,64 @@ def cluster_auth_gcloud(
         "get-credentials", cluster
     ]
     logger.info(f"Getting credentials for {cluster} in {zone}")
-    logger.debug(f"Running gcloud command: " +
+    logger.debug("Running gcloud command: " +
                  " ".join(x for x in gcloud_cluster_credential_command))
     subprocess.check_call(gcloud_cluster_credential_command)
 
     yield
 
+@contextmanager
+def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=None):
+    """
+    This helper contextmanager will update AWS_SHARED_CREDENTIALS_FILE if
+    service_key is provided and AWS_SESSION_TOKEN if role_arn is provided.
+    """
+    # validate arguments
+    if bool(service_key) == bool(role_arn):
+        raise Exception("AWS authentication require either service_key or role_arn, but not both.")
+    if role_arn:
+        assert role_session_name, "always pass role_session_name along with role_arn"
+
+    try:
+        if service_key:
+            original_credential_file_loc = os.environ.get("AWS_SHARED_CREDENTIALS_FILE", None)
+
+            # Get path to service_key and validate its around
+            service_key_path = os.path.join(
+                'deployments', deployment, 'secrets', service_key
+            )
+            if not os.path.isfile(service_key_path):
+                raise FileNotFoundError(
+                    f'The service_key file {service_key_path} does not exist')
+
+            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+
+        elif role_arn:
+            original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+            original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+            original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
+
+            sts_client = boto3.client('sts')
+            assumed_role_object = sts_client.assume_role(
+                RoleArn=role_arn,
+                RoleSessionName=role_session_name
+            )
+
+            creds = assumed_role_object['Credentials']
+            os.environ['AWS_ACCESS_KEY_ID'] = creds['AccessKeyId']
+            os.environ['AWS_SECRET_ACCESS_KEY'] = creds['SecretAccessKey']
+            os.environ['AWS_SESSION_TOKEN'] = creds['SessionToken']
+
+        # return until context exits
+        yield
+
+    finally:
+        if service_key:
+            unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+        elif role_arn:
+            unset_env_var('AWS_ACCESS_KEY_ID', original_access_key_id)
+            unset_env_var('AWS_SECRET_ACCESS_KEY', original_secret_access_key)
+            unset_env_var('AWS_SESSION_TOKEN', original_session_token)
 
 def cluster_auth_aws(
         deployment,
