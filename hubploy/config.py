@@ -3,12 +3,14 @@ A util (get_config) that process hubploy.yaml deployment configuration and
 returns it embedded with a set of LocalImage objects with filesystem paths made
 absolute.
 """
+
 import logging
 import os
 from ruamel.yaml import YAML
 
 logger = logging.getLogger(__name__)
 yaml = YAML(typ="safe")
+
 
 class DeploymentNotFoundError(Exception):
     def __init__(self, deployment, path, *args, **kwargs):
@@ -24,11 +26,10 @@ class RemoteImage:
     """
     A simple class to represent a remote image
     """
-    def __init__(self,
-                 name,
-                 tag=None,
-                 helm_substitution_path="jupyterhub.singleuser.image"
-                ):
+
+    def __init__(
+        self, name, tag=None, helm_substitution_path="jupyterhub.singleuser.image"
+    ):
         """
         Define an Image from the hubploy config
 
@@ -41,8 +42,8 @@ class RemoteImage:
         # FIXME: Validate name to conform to docker image name guidelines
         if not name or name.strip() == "":
             raise ValueError(
-                "Name of image to be built is not specified. Check " +
-                "hubploy.yaml of your deployment"
+                "Name of image to be built is not specified. Check "
+                + "hubploy.yaml of your deployment"
             )
         self.name = name
         self.tag = tag
@@ -52,6 +53,7 @@ class RemoteImage:
             self.image_spec = f"{self.name}"
         else:
             self.image_spec = f"{self.name}:{self.tag}"
+
 
 def get_config(deployment, debug=False, verbose=False):
     """
@@ -82,10 +84,7 @@ def get_config(deployment, debug=False, verbose=False):
         if "image_name" in images_config:
             if ":" in images_config["image_name"]:
                 image_name, tag = images_config["image_name"].split(":")
-                images = [{
-                    "name": image_name,
-                    "tag": tag
-                }]
+                images = [{"name": image_name, "tag": tag}]
             else:
                 images = [{"name": images_config["image_name"]}]
 
@@ -96,29 +95,31 @@ def get_config(deployment, debug=False, verbose=False):
             for i in image_list:
                 if ":" in i["name"]:
                     image_name, tag = i["name"].split(":")
-                    logger.info(
-                        f"Tag for {image_name}: {tag}"
+                    logger.info(f"Tag for {image_name}: {tag}")
+                    images.append(
+                        {
+                            "name": image_name,
+                            "tag": tag,
+                        }
                     )
-                    images.append({
-                        "name": image_name,
-                        "tag": tag,
-                    })
                 else:
                     images.append({"name": i["name"]})
 
         config["images"]["images"] = [RemoteImage(**i) for i in images]
 
         # Backwards compatibility checker for cluster block
-        if config["cluster"]["provider"] == "aws" and \
-            "project" in config["cluster"]["aws"]:
-            config["cluster"]["aws"]["account_id"] = \
-                config["cluster"]["aws"]["project"]
+        if (
+            config["cluster"]["provider"] == "aws"
+            and "project" in config["cluster"]["aws"]
+        ):
+            config["cluster"]["aws"]["account_id"] = config["cluster"]["aws"]["project"]
             del config["cluster"]["aws"]["project"]
 
-        if config["cluster"]["provider"] == "aws" and \
-            "zone" in config["cluster"]["aws"]:
-            config["cluster"]["aws"]["region"] = \
-                config["cluster"]["aws"]["zone"]
+        if (
+            config["cluster"]["provider"] == "aws"
+            and "zone" in config["cluster"]["aws"]
+        ):
+            config["cluster"]["aws"]["region"] = config["cluster"]["aws"]["zone"]
             del config["cluster"]["aws"]["zone"]
 
     logger.debug(f"Config loaded and parsed: {config}")

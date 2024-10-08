@@ -17,6 +17,7 @@ deployments/
 Util to deploy a Helm chart (deploy) given hubploy configuration and Helm chart
 configuration located in accordance to hubploy conventions.
 """
+
 import itertools
 import kubernetes.config
 import logging
@@ -49,8 +50,8 @@ def helm_upgrade(
     debug,
     verbose,
     helm_debug,
-    dry_run
-    ):
+    dry_run,
+):
     if verbose:
         logger.setLevel(logging.INFO)
     elif debug:
@@ -58,9 +59,7 @@ def helm_upgrade(
 
     logger.info(f"Deploying {name} in namespace {namespace}")
     logger.debug(f"Running helm dep up in subdirectory '{chart}'")
-    subprocess.check_call([
-        HELM_EXECUTABLE, "dep", "up"
-    ], cwd=chart)
+    subprocess.check_call([HELM_EXECUTABLE, "dep", "up"], cwd=chart)
 
     # Create namespace explicitly, since helm3 removes support for it
     # See https://github.com/helm/helm/issues/6794
@@ -71,13 +70,13 @@ def helm_upgrade(
         kubernetes.config.load_kube_config(config_file=kubeconfig)
         logger.info(f"Loaded kubeconfig: {kubeconfig}")
     except Exception as e:
-        logger.info(f"Failed to load kubeconfig {kubeconfig} with " +
-                    f"exception:\n{e}\nTrying in-cluster config...")
+        logger.info(
+            f"Failed to load kubeconfig {kubeconfig} with "
+            + f"exception:\n{e}\nTrying in-cluster config..."
+        )
         kubernetes.config.load_incluster_config()
         logger.info("Loaded in-cluster kubeconfig")
-    logger.debug(
-        f"Checking for namespace {namespace} and creating if it doesn't exist"
-    )
+    logger.debug(f"Checking for namespace {namespace} and creating if it doesn't exist")
     api = CoreV1Api()
     try:
         api.read_namespace(namespace)
@@ -85,11 +84,7 @@ def helm_upgrade(
         if e.status == 404:
             # Create namespace
             print(f"Namespace {namespace} does not exist, creating it...")
-            api.create_namespace(
-                V1Namespace(
-                    metadata=V1ObjectMeta(name=namespace)
-                )
-            )
+            api.create_namespace(V1Namespace(metadata=V1ObjectMeta(name=namespace)))
         else:
             raise
 
@@ -125,6 +120,7 @@ def helm_upgrade(
     logger.debug("Helm upgrade command: " + " ".join(x for x in cmd))
     subprocess.check_call(cmd)
 
+
 def deploy(
     deployment,
     chart,
@@ -141,8 +137,8 @@ def deploy(
     verbose=False,
     helm_debug=False,
     dry_run=False,
-    image_overrides=None
-    ):
+    image_overrides=None,
+):
     """
     Deploy a JupyterHub.
 
@@ -181,26 +177,28 @@ def deploy(
 
     if namespace is None:
         namespace = name
-    helm_config_files = [f for f in [
-        os.path.join(
-            "deployments", deployment, "config", "common.yaml"
-        ),
-        os.path.join(
-            "deployments", deployment, "config", f"{environment}.yaml"
-        ),
-    ] if os.path.exists(f)]
+    helm_config_files = [
+        f
+        for f in [
+            os.path.join("deployments", deployment, "config", "common.yaml"),
+            os.path.join("deployments", deployment, "config", f"{environment}.yaml"),
+        ]
+        if os.path.exists(f)
+    ]
     logger.debug(f"Using helm config files: {helm_config_files}")
 
-    helm_secret_files = [f for f in [
-        # Support for secrets in same repo
-        os.path.join(
-            "deployments", deployment, "secrets", f"{environment}.yaml"
-        ),
-        # Support for secrets in a submodule repo
-        os.path.join(
-            "secrets", "deployments", deployment, "secrets", f"{environment}.yaml"
-        ),
-    ] if os.path.exists(f)]
+    helm_secret_files = [
+        f
+        for f in [
+            # Support for secrets in same repo
+            os.path.join("deployments", deployment, "secrets", f"{environment}.yaml"),
+            # Support for secrets in a submodule repo
+            os.path.join(
+                "secrets", "deployments", deployment, "secrets", f"{environment}.yaml"
+            ),
+        ]
+        if os.path.exists(f)
+    ]
     logger.debug(f"Using helm secret files: {helm_secret_files}")
 
     if config.get("images"):
@@ -211,15 +209,15 @@ def deploy(
 
             if num_images != num_overrides:
                 raise ValueError(
-                    f"Number of image overrides ({num_overrides}) must match " +
-                    "number of images found in " +
-                    f"deployments/{deployment}/hubploy.yaml ({num_images})"
+                    f"Number of image overrides ({num_overrides}) must match "
+                    + "number of images found in "
+                    + f"deployments/{deployment}/hubploy.yaml ({num_images})"
                 )
             for override in image_overrides:
                 if ":" not in override:
                     raise ValueError(
-                        "Image override must be in the format " +
-                        f"<path_to_image/image_name>:<tag>. Got: {override}"
+                        "Image override must be in the format "
+                        + f"<path_to_image/image_name>:<tag>. Got: {override}"
                     )
 
         count = 0
@@ -231,16 +229,16 @@ def deploy(
                 override = image_overrides[count]
                 override_image, override_tag = override.split(":")
                 print(
-                    f"Overriding image {image.name}:{image.tag} to " +
-                    f"{override_image}:{override_tag}"
+                    f"Overriding image {image.name}:{image.tag} to "
+                    + f"{override_image}:{override_tag}"
                 )
                 image.name = override_image
                 image.tag = override_tag
 
             if image.tag is not None:
                 logger.info(
-                    f"Using image {image.name}:{image.tag} for " +
-                    f"{image.helm_substitution_path}"
+                    f"Using image {image.name}:{image.tag} for "
+                    + f"{image.helm_substitution_path}"
                 )
                 helm_config_overrides_string.append(
                     f"{image.helm_substitution_path}.tag={image.tag}"
@@ -250,15 +248,13 @@ def deploy(
                 )
             else:
                 logger.info(
-                    f"Using image {image.name} for " +
-                    f"{image.helm_substitution_path}"
+                    f"Using image {image.name} for " + f"{image.helm_substitution_path}"
                 )
                 helm_config_overrides_string.append(
                     f"{image.helm_substitution_path}.name={image.name}"
                 )
 
-
-            count+=1
+            count += 1
 
     with ExitStack() as stack:
         decrypted_secret_files = [
@@ -266,8 +262,9 @@ def deploy(
         ]
 
         # Just in time for k8s access, activate the cluster credentials
-        logger.debug("Activating cluster credentials for deployment " +
-                     f"{deployment} and performing deployment upgrade."
+        logger.debug(
+            "Activating cluster credentials for deployment "
+            + f"{deployment} and performing deployment upgrade."
         )
         stack.enter_context(cluster_auth(deployment, debug, verbose))
         helm_upgrade(
@@ -285,5 +282,5 @@ def deploy(
             debug,
             verbose,
             helm_debug,
-            dry_run
+            dry_run,
         )
