@@ -1,21 +1,16 @@
 import setuptools
 
 setuptools.setup(
-    name='hubploy',
-    version='0.3',
-    url="https://github.com/yuvipanda/hubploy",
-    author="Yuvi Panda",
+    name="hubploy",
+    version="0.4",
+    url="https://github.com/berkeley-dsep-infra/hubploy",
+    author="Shane Knapp",
     packages=setuptools.find_packages(),
-    install_requires=[
-        'docker',
-        'jupyter-repo2docker>=0.11',
-        'kubernetes',
-        'boto3'
-    ],
+    install_requires=["kubernetes", "boto3"],
+    python_requires=">=3.6",
     entry_points={
-        'console_scripts': [
-            'hubploy = hubploy.__main__:main',
+        "console_scripts": [
+            "hubploy = hubploy.__main__:main",
         ],
     },
-
 )
