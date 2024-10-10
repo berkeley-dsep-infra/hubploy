@@ -310,7 +310,9 @@ def decrypt_file(encrypted_path):
 
         logger.info("File is sops encrypted, decrypting...")
         logger.debug(
-            "Executing: " + " ".join(sops_command) + " (with output to a temporary file)"
+            "Executing: "
+            + " ".join(sops_command)
+            + " (with output to a temporary file)"
         )
         with tempfile.NamedTemporaryFile() as f:
             subprocess.check_call(
