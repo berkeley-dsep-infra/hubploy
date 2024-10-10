@@ -9,6 +9,7 @@ hubploy deploy <deployment> <chart> <environment>
 ```
 
 Help text:
+
 ```
 $ hubploy --help
 usage: hubploy [-h] [-d] [-D] [-v] {deploy} ...
@@ -25,6 +26,7 @@ options:
 ```
 
 Deploy help:
+
 ```
 hubploy deploy --help
 usage: hubploy deploy [-h] [--namespace NAMESPACE] [--set SET] [--set-string SET_STRING] [--version VERSION] [--timeout TIMEOUT] [--force] [--atomic]
