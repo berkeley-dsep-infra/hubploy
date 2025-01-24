@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="hubploy",
-    version="0.4.1",
+    version="0.4.2",
     url="https://github.com/berkeley-dsep-infra/hubploy",
     author="Yuvi Panda and Shane Knapp",
     packages=setuptools.find_packages(),
