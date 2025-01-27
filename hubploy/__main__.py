@@ -97,6 +97,7 @@ def main():
     )
     deploy_parser.add_argument(
         "--dry-run",
+        default=False,
         action="store_true",
         help="Dry run the helm upgrade command. This also renders the "
         + "chart to STDOUT. This is not allowed to be used in a "
@@ -119,6 +120,10 @@ def main():
     )
 
     args = argparser.parse_args()
+
+    if args.command is None:
+        argparser.print_help()
+        sys.exit(1)
 
     if args.verbose:
         logger.setLevel(logging.INFO)
