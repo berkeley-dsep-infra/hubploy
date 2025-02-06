@@ -38,6 +38,7 @@ HELM_EXECUTABLE = os.environ.get("HELM_EXECUTABLE", "helm")
 def helm_upgrade(
     name,
     namespace,
+    context,
     chart,
     config_files,
     config_overrides_implicit,
@@ -67,11 +68,11 @@ def helm_upgrade(
     kubeconfig = os.environ.get("KUBECONFIG", None)
     logger.debug("Loading kubeconfig for k8s access")
     try:
-        kubernetes.config.load_kube_config(config_file=kubeconfig)
-        logger.info(f"Loaded kubeconfig: {kubeconfig}")
+        kubernetes.config.load_kube_config(config_file=kubeconfig, context=context)
+        logger.info(f"Loaded kubeconfig {kubeconfig} for context {context}")
     except Exception as e:
         logger.info(
-            f"Failed to load kubeconfig {kubeconfig} with "
+            f"Failed to load kubeconfig {kubeconfig} context {context} with "
             + f"exception:\n{e}\nTrying in-cluster config..."
         )
         kubernetes.config.load_incluster_config()
@@ -98,6 +99,8 @@ def helm_upgrade(
         name,
         chart,
     ]
+    if context:
+        cmd += ["--kube-context", context]
     if version:
         cmd += ["--version", version]
     if timeout:
@@ -257,6 +260,13 @@ def deploy(
             count += 1
 
     with ExitStack() as stack:
+        # Use any specified kubeconfig context. A value of {namespace} will be
+        # templated. A value of None will be interpreted as the current context.
+        template_vars = dict(namespace=namespace)
+        context = config.get("cluster", {}).get("kubeconfig", {}).get("context")
+        if context:
+            context = context.format(**template_vars)
+
         decrypted_secret_files = [
             stack.enter_context(decrypt_file(f)) for f in helm_secret_files
         ]
@@ -270,6 +280,7 @@ def deploy(
         helm_upgrade(
             name,
             namespace,
+            context,
             chart,
             helm_config_files + decrypted_secret_files,
             helm_config_overrides_implicit,
