@@ -142,15 +142,17 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
             )
 
             # Get path to service_key and validate its around
-            service_key_path = os.path.join(
+            encrypted_service_key_path = os.path.join(
                 "deployments", deployment, "secrets", service_key
             )
-            if not os.path.isfile(service_key_path):
+            if not os.path.isfile(encrypted_service_key_path):
                 raise FileNotFoundError(
-                    f"The service_key file {service_key_path} does not exist"
+                    f"The service_key file {encrypted_service_key_path} does not exist"
                 )
 
-            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+            logger.info(f"Decrypting service key {encrypted_service_key_path}")
+            with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
+                os.environ["AWS_SHARED_CREDENTIALS_FILE"] = decrypted_service_key_path
 
         elif role_arn:
             original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
@@ -296,6 +298,13 @@ def decrypt_file(encrypted_path):
             try:
                 encrypted_data = json.load(f)
             except json.JSONDecodeError:
+                yield encrypted_path
+                return
+        elif ext == ".cfg":
+            try:
+                with open(encrypted_path) as f:
+                    encrypted_data = f.read()
+            except Exception:
                 yield encrypted_path
                 return
 
