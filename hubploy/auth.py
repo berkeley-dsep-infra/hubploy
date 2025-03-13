@@ -153,6 +153,8 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
             logger.info(f"Decrypting service key {encrypted_service_key_path}")
             with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
                 os.environ["AWS_SHARED_CREDENTIALS_FILE"] = decrypted_service_key_path
+            logger.info(f"Set AWS_SHARED_CREDENTIALS_FILE to {decrypted_service_key_path}")
+            subprocess.check_call(["aws", "configure", "list"])
 
         elif role_arn:
             original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
@@ -182,7 +184,7 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
 
 
 def cluster_auth_aws(
-    deployment, account_id, cluster, region, service_key=None, role_arn=None
+    deployment, cluster, region, service_key=None, role_arn=None
 ):
     """
     Setup AWS authentication with service_key or with a role
