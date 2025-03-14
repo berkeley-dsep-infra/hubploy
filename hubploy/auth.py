@@ -205,7 +205,9 @@ def cluster_auth_aws(deployment, cluster, region, service_key=None, role_arn=Non
         role_session_name="hubploy-cluster-auth",
     ):
         subprocess.check_call(
-            ["aws", "eks", "update-kubeconfig", "--name", cluster, "--region", region, "> /dev/null"]
+            ["aws", "eks", "update-kubeconfig", "--name", cluster, "--region", region],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT
         )
         yield
 
