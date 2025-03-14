@@ -136,21 +136,31 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
         assert role_session_name, "always pass role_session_name along with role_arn"
 
     try:
+        original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
+        original_secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+        original_session_token = os.environ.get("AWS_SESSION_TOKEN", None)
         if service_key:
             original_credential_file_loc = os.environ.get(
                 "AWS_SHARED_CREDENTIALS_FILE", None
             )
 
             # Get path to service_key and validate its around
-            service_key_path = os.path.join(
+            encrypted_service_key_path = os.path.join(
                 "deployments", deployment, "secrets", service_key
             )
-            if not os.path.isfile(service_key_path):
+            if not os.path.isfile(encrypted_service_key_path):
                 raise FileNotFoundError(
-                    f"The service_key file {service_key_path} does not exist"
+                    f"The service_key file {encrypted_service_key_path} does not exist"
                 )
 
-            os.environ["AWS_SHARED_CREDENTIALS_FILE"] = service_key_path
+            logger.info(f"Decrypting service key {encrypted_service_key_path}")
+            with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
+                auth = yaml.load(open(decrypted_service_key_path))
+                os.environ["AWS_ACCESS_KEY_ID"] = auth["creds"]["aws_access_key_id"]
+                os.environ["AWS_SECRET_ACCESS_KEY"] = auth["creds"][
+                    "aws_secret_access_key"
+                ]
+            logger.info("Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
 
         elif role_arn:
             original_access_key_id = os.environ.get("AWS_ACCESS_KEY_ID", None)
@@ -173,15 +183,16 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
     finally:
         if service_key:
             unset_env_var("AWS_SHARED_CREDENTIALS_FILE", original_credential_file_loc)
+            unset_env_var("AWS_ACCESS_KEY_ID", original_access_key_id)
+            unset_env_var("AWS_SECRET_ACCESS_KEY", original_secret_access_key)
+            unset_env_var("AWS_SESSION_TOKEN", original_session_token)
         elif role_arn:
             unset_env_var("AWS_ACCESS_KEY_ID", original_access_key_id)
             unset_env_var("AWS_SECRET_ACCESS_KEY", original_secret_access_key)
             unset_env_var("AWS_SESSION_TOKEN", original_session_token)
 
 
-def cluster_auth_aws(
-    deployment, account_id, cluster, region, service_key=None, role_arn=None
-):
+def cluster_auth_aws(deployment, cluster, region, service_key=None, role_arn=None):
     """
     Setup AWS authentication with service_key or with a role
 
@@ -296,6 +307,13 @@ def decrypt_file(encrypted_path):
             try:
                 encrypted_data = json.load(f)
             except json.JSONDecodeError:
+                yield encrypted_path
+                return
+        elif ext == ".cfg":
+            try:
+                with open(encrypted_path) as f:
+                    encrypted_data = f.read()
+            except Exception:
                 yield encrypted_path
                 return
 

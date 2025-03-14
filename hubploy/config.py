@@ -107,20 +107,5 @@ def get_config(deployment, debug=False, verbose=False):
 
         config["images"]["images"] = [RemoteImage(**i) for i in images]
 
-        # Backwards compatibility checker for cluster block
-        if (
-            config["cluster"]["provider"] == "aws"
-            and "project" in config["cluster"]["aws"]
-        ):
-            config["cluster"]["aws"]["account_id"] = config["cluster"]["aws"]["project"]
-            del config["cluster"]["aws"]["project"]
-
-        if (
-            config["cluster"]["provider"] == "aws"
-            and "zone" in config["cluster"]["aws"]
-        ):
-            config["cluster"]["aws"]["region"] = config["cluster"]["aws"]["zone"]
-            del config["cluster"]["aws"]["zone"]
-
     logger.debug(f"Config loaded and parsed: {config}")
     return config
