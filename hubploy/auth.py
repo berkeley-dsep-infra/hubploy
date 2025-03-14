@@ -11,7 +11,6 @@ import json
 import logging
 import os
 import subprocess
-import sys
 import tempfile
 
 from contextlib import contextmanager
@@ -158,7 +157,9 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
             with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
                 auth = yaml.load(open(decrypted_service_key_path))
                 os.environ["AWS_ACCESS_KEY_ID"] = auth["creds"]["aws_access_key_id"]
-                os.environ["AWS_SECRET_ACCESS_KEY"] = auth["creds"]["aws_secret_access_key"]
+                os.environ["AWS_SECRET_ACCESS_KEY"] = auth["creds"][
+                    "aws_secret_access_key"
+                ]
             logger.info("Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY")
 
         elif role_arn:
@@ -191,9 +192,7 @@ def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=Non
             unset_env_var("AWS_SESSION_TOKEN", original_session_token)
 
 
-def cluster_auth_aws(
-    deployment, cluster, region, service_key=None, role_arn=None
-):
+def cluster_auth_aws(deployment, cluster, region, service_key=None, role_arn=None):
     """
     Setup AWS authentication with service_key or with a role
 
