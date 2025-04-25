@@ -276,7 +276,11 @@ def deploy(
             "Activating cluster credentials for deployment "
             + f"{deployment} and performing deployment upgrade."
         )
-        current_login = stack.enter_context(cluster_auth(deployment, debug, verbose))
+        provider = config.get("cluster", {}).get("provider")
+        if provider == "gcloud":
+            current_login = stack.enter_context(cluster_auth(deployment, debug, verbose))
+        else:
+            stack.enter_context(cluster_auth(deployment, debug, verbose))
         helm_upgrade(
             name,
             namespace,
@@ -296,4 +300,5 @@ def deploy(
             dry_run,
         )
         # Revert the gcloud auth
-        stack.enter_context(revert_gcloud_auth(current_login))
+        if provider == "gcloud":
+            stack.enter_context(revert_gcloud_auth(current_login))
