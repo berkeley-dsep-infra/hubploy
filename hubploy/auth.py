@@ -95,7 +95,9 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     logger.debug(
         "Running gcloud command: " + " ".join(x for x in current_login_command)
     )
-    current_login = subprocess.check_output(current_login_command).decode("utf-8").strip()
+    current_login = (
+        subprocess.check_output(current_login_command).decode("utf-8").strip()
+    )
     logger.info(f"Current gcloud login: {current_login}")
 
     encrypted_service_key_path = os.path.join(
@@ -133,6 +135,7 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
 
     yield current_login
 
+
 @contextmanager
 def revert_gcloud_auth(current_login):
     """
@@ -140,13 +143,12 @@ def revert_gcloud_auth(current_login):
     """
     if current_login:
         logger.info(f"Reverting gcloud login to {current_login}")
-        subprocess.check_call(
-            ["gcloud", "config", "set", "account", current_login]
-        )
+        subprocess.check_call(["gcloud", "config", "set", "account", current_login])
     else:
         logger.info("Reverting gcloud login to default")
         subprocess.check_call(["gcloud", "config", "unset", "account"])
     yield
+
 
 @contextmanager
 def _auth_aws(deployment, service_key=None, role_arn=None, role_session_name=None):
@@ -234,7 +236,7 @@ def cluster_auth_aws(deployment, cluster, region, service_key=None, role_arn=Non
         subprocess.check_call(
             ["aws", "eks", "update-kubeconfig", "--name", cluster, "--region", region],
             stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT
+            stderr=subprocess.STDOUT,
         )
         yield
 

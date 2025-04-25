@@ -278,7 +278,9 @@ def deploy(
         )
         provider = config.get("cluster", {}).get("provider")
         if provider == "gcloud":
-            current_login = stack.enter_context(cluster_auth(deployment, debug, verbose))
+            current_login = stack.enter_context(
+                cluster_auth(deployment, debug, verbose)
+            )
         else:
             stack.enter_context(cluster_auth(deployment, debug, verbose))
         helm_upgrade(
