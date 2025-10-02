@@ -31,7 +31,10 @@ from kubernetes.client.models import V1Namespace, V1ObjectMeta
 from hubploy.config import get_config
 from hubploy.auth import decrypt_file, cluster_auth, revert_gcloud_auth
 
+from ruamel.yaml import YAML
+
 logger = logging.getLogger(__name__)
+yaml = YAML(typ="safe")
 HELM_EXECUTABLE = os.environ.get("HELM_EXECUTABLE", "helm")
 
 
@@ -223,41 +226,53 @@ def deploy(
                         + f"<path_to_image/image_name>:<tag>. Got: {override}"
                     )
 
-        count = 0
-        for image in config["images"]["images"]:
-            # We can support other charts that wrap z2jh by allowing various
-            # config paths where we set image tags and names.
-            # We default to one sublevel, but we can do multiple levels.
-            if image_overrides is not None:
-                override = image_overrides[count]
-                override_image, override_tag = override.split(":")
-                print(
-                    f"Overriding image {image.name}:{image.tag} to "
-                    + f"{override_image}:{override_tag}"
-                )
-                image.name = override_image
-                image.tag = override_tag
+        with open(os.path.join("deployments", deployment, "config", f"{environment}.yaml")) as f:
+            environment_config = yaml.load(f)
 
-            if image.tag is not None:
-                logger.info(
-                    f"Using image {image.name}:{image.tag} for "
-                    + f"{image.helm_substitution_path}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.tag={image.tag}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.name={image.name}"
-                )
-            else:
-                logger.info(
-                    f"Using image {image.name} for " + f"{image.helm_substitution_path}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.name={image.name}"
-                )
+        # if no image overrides were given and the helm config specifies an image, this takes precedence
+        # over the image specified in hubploy.yaml
+        if image_overrides is None and environment_config["jupyterhub"]["singleuser"]["image"] in environment_config:
+            logger.info(f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml")
+            del config["images"]
+        else:
+            logger.info(f"No image specification found in the {environment} helm config, using hubploy.yaml")
+            count = 0
+            for image in config["images"]["images"]:
+                # We can support other charts that wrap z2jh by allowing various
+                # config paths where we set image tags and names.
+                # We default to one sublevel, but we can do multiple levels.
+                #
+                # if image overrides were specified via args, use them over any other configs
+                if image_overrides is not None:
+                    override = image_overrides[count]
+                    override_image, override_tag = override.split(":")
+                    print(
+                        f"Overriding image {image.name}:{image.tag} to "
+                        + f"{override_image}:{override_tag}"
+                    )
+                    image.name = override_image
+                    image.tag = override_tag
 
-            count += 1
+                if image.tag is not None:
+                    logger.info(
+                        f"Using image {image.name}:{image.tag} for "
+                        + f"{image.helm_substitution_path}"
+                    )
+                    helm_config_overrides_string.append(
+                        f"{image.helm_substitution_path}.tag={image.tag}"
+                    )
+                    helm_config_overrides_string.append(
+                        f"{image.helm_substitution_path}.name={image.name}"
+                    )
+                else:
+                    logger.info(
+                        f"Using image {image.name} for " + f"{image.helm_substitution_path}"
+                    )
+                    helm_config_overrides_string.append(
+                        f"{image.helm_substitution_path}.name={image.name}"
+                    )
+
+                count += 1
 
     with ExitStack() as stack:
         # Use any specified kubeconfig context. A value of {namespace} will be
