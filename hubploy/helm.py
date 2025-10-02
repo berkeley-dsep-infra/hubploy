@@ -233,13 +233,17 @@ def deploy(
 
         # if no image overrides were given and the helm config specifies an image, this takes precedence
         # over the image specified in hubploy.yaml
+        jupyterhub_config = environment_config.get("jupyterhub", {})
         if (
             image_overrides is None
-            and environment_config["jupyterhub"]["singleuser"]["image"]
-            in environment_config
+            and jupyterhub_config.get("singleuser", {}).get("image", None) is not None
         ):
-            logger.info(
+            print(
                 f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml"
+            )
+            image_info = environment_config["jupyterhub"]["singleuser"]["image"]
+            logger.info(
+                f"Using image {image_info['name']}:{image_info.get('tag','latest')}"
             )
             del config["images"]
         else:
