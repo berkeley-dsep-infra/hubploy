@@ -219,7 +219,7 @@ def deploy(
         image_overrides is None
         and jupyterhub_config.get("singleuser", {}).get("image", None) is not None
     ):
-        print(
+        logger.info(
             f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml"
         )
         image_info = environment_config["jupyterhub"]["singleuser"]["image"]
@@ -247,68 +247,44 @@ def deploy(
                         + f"<path_to_image/image_name>:<tag>. Got: {override}"
                     )
 
-        with open(
-            os.path.join("deployments", deployment, "config", f"{environment}.yaml")
-        ) as f:
-            environment_config = yaml.load(f)
+        count = 0
+        for image in config["images"]["images"]:
+            # We can support other charts that wrap z2jh by allowing various
+            # config paths where we set image tags and names.
+            # We default to one sublevel, but we can do multiple levels.
+            #
+            # if image overrides were specified via args, use them over any other configs
+            if image_overrides is not None:
+                override = image_overrides[count]
+                override_image, override_tag = override.split(":")
+                print(
+                    f"Overriding image {image.name}:{image.tag} to "
+                    + f"{override_image}:{override_tag}"
+                )
+                image.name = override_image
+                image.tag = override_tag
 
-        # if no image overrides were given and the helm config specifies an image, this takes precedence
-        # over the image specified in hubploy.yaml
-        jupyterhub_config = environment_config.get("jupyterhub", {})
-        if (
-            image_overrides is None
-            and jupyterhub_config.get("singleuser", {}).get("image", None) is not None
-        ):
-            logger.info(
-                f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml"
-            )
-            image_info = environment_config["jupyterhub"]["singleuser"]["image"]
-            logger.info(
-                f"Using image {image_info['name']}:{image_info.get('tag','latest')}"
-            )
-            del config["images"]
-        else:
-            logger.info(
-                f"No image specification found in the {environment} helm config, using hubploy.yaml"
-            )
-            count = 0
-            for image in config["images"]["images"]:
-                # We can support other charts that wrap z2jh by allowing various
-                # config paths where we set image tags and names.
-                # We default to one sublevel, but we can do multiple levels.
-                #
-                # if image overrides were specified via args, use them over any other configs
-                if image_overrides is not None:
-                    override = image_overrides[count]
-                    override_image, override_tag = override.split(":")
-                    print(
-                        f"Overriding image {image.name}:{image.tag} to "
-                        + f"{override_image}:{override_tag}"
-                    )
-                    image.name = override_image
-                    image.tag = override_tag
+            if image.tag is not None:
+                logger.info(
+                    f"Using image {image.name}:{image.tag} for "
+                    + f"{image.helm_substitution_path}"
+                )
+                helm_config_overrides_string.append(
+                    f"{image.helm_substitution_path}.tag={image.tag}"
+                )
+                helm_config_overrides_string.append(
+                    f"{image.helm_substitution_path}.name={image.name}"
+                )
+            else:
+                logger.info(
+                    f"Using image {image.name} for "
+                    + f"{image.helm_substitution_path}"
+                )
+                helm_config_overrides_string.append(
+                    f"{image.helm_substitution_path}.name={image.name}"
+                )
 
-                if image.tag is not None:
-                    logger.info(
-                        f"Using image {image.name}:{image.tag} for "
-                        + f"{image.helm_substitution_path}"
-                    )
-                    helm_config_overrides_string.append(
-                        f"{image.helm_substitution_path}.tag={image.tag}"
-                    )
-                    helm_config_overrides_string.append(
-                        f"{image.helm_substitution_path}.name={image.name}"
-                    )
-                else:
-                    logger.info(
-                        f"Using image {image.name} for "
-                        + f"{image.helm_substitution_path}"
-                    )
-                    helm_config_overrides_string.append(
-                        f"{image.helm_substitution_path}.name={image.name}"
-                    )
-
-                count += 1
+            count += 1
 
     else:
         print(
