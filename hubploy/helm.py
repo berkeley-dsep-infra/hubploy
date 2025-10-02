@@ -207,7 +207,28 @@ def deploy(
     ]
     logger.debug(f"Using helm secret files: {helm_secret_files}")
 
-    if config.get("images"):
+    with open(
+        os.path.join("deployments", deployment, "config", f"{environment}.yaml")
+    ) as f:
+        environment_config = yaml.load(f)
+
+    # if no image overrides were given and the helm config specifies an image, this takes precedence
+    # over the image specified in hubploy.yaml
+    jupyterhub_config = environment_config.get("jupyterhub", {})
+    if (
+        image_overrides is None
+        and jupyterhub_config.get("singleuser", {}).get("image", None) is not None
+    ):
+        print(
+            f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml"
+        )
+        image_info = environment_config["jupyterhub"]["singleuser"]["image"]
+        logger.info(
+            f"Using image {image_info['name']}:{image_info.get('tag','latest')}"
+        )
+        del config["images"]
+
+    elif config.get("images"):
         if image_overrides is not None:
             print(f"Image overrides found: {image_overrides}")
             num_images = len(config["images"]["images"])
@@ -238,7 +259,7 @@ def deploy(
             image_overrides is None
             and jupyterhub_config.get("singleuser", {}).get("image", None) is not None
         ):
-            print(
+            logger.info(
                 f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml"
             )
             image_info = environment_config["jupyterhub"]["singleuser"]["image"]
@@ -288,6 +309,11 @@ def deploy(
                     )
 
                 count += 1
+
+    else:
+        print(
+            f"No image specification found in the {environment} helm config or hubploy.yaml, exiting."
+        )
 
     with ExitStack() as stack:
         # Use any specified kubeconfig context. A value of {namespace} will be
