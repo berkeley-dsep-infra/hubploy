@@ -22,9 +22,9 @@ class DeploymentNotFoundError(Exception):
         return f"deployment {self.deployment} not found at {self.path}"
 
 
-class RemoteImage:
+class LocalImage:
     """
-    A simple class to represent a remote image
+    A simple class to represent an image
     """
 
     def __init__(
@@ -58,7 +58,7 @@ class RemoteImage:
 def get_config(deployment, debug=False, verbose=False):
     """
     Returns hubploy.yaml configuration as a Python dictionary if it exists for
-    a given deployment, and also augments it with a set of RemoteImage objects
+    a given deployment, and also augments it with a set of LocalImage objects
     in ["images"]["images"].
     """
     if verbose:
@@ -105,7 +105,7 @@ def get_config(deployment, debug=False, verbose=False):
                 else:
                     images.append({"name": i["name"]})
 
-        config["images"]["images"] = [RemoteImage(**i) for i in images]
+        config["images"]["images"] = [LocalImage(**i) for i in images]
 
     logger.debug(f"Config loaded and parsed: {config}")
     return config
