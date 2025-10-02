@@ -25,8 +25,7 @@ class DeploymentNotFoundError(Exception):
 def get_config(deployment, debug=False, verbose=False):
     """
     Returns hubploy.yaml configuration as a Python dictionary if it exists for
-    a given deployment, and also augments it with a set of LocalImage objects
-    in ["images"]["images"].
+    a given deployment. This contains the auth and cluster deployment information.
     """
     if verbose:
         logger.setLevel(logging.INFO)
