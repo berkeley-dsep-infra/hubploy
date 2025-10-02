@@ -3,7 +3,6 @@ import hubploy
 import logging
 import os
 import sys
-import textwrap
 
 from hubploy import helm
 from argparse import RawTextHelpFormatter
@@ -105,19 +104,6 @@ def main():
         + "the script will exit. To enable this option, set a local environment "
         + "varible HUBPLOY_LOCAL_DEBUG=true",
     )
-    deploy_parser.add_argument(
-        "--image-overrides",
-        nargs="+",
-        help=textwrap.dedent(
-            """\
-        Override one or more images and tags to deploy. Format is:\n
-        <path_to_image1/image_name>:<tag1> <path_to_image2/image_name>:<tag2> ...\n \n
-        IMPORTANT: The order of images passed in must match the order in which
-        they appear in hubploy.yaml and separated by spaces without quotes. You
-        must always specify a tag when overriding images.
-        """
-        ),
-    )
 
     args = argparser.parse_args()
 
@@ -179,7 +165,6 @@ def main():
         args.verbose,
         args.helm_debug,
         args.dry_run,
-        args.image_overrides,
     )
 
 

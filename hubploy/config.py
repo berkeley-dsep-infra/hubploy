@@ -22,39 +22,6 @@ class DeploymentNotFoundError(Exception):
         return f"deployment {self.deployment} not found at {self.path}"
 
 
-class LocalImage:
-    """
-    A simple class to represent an image
-    """
-
-    def __init__(
-        self, name, tag=None, helm_substitution_path="jupyterhub.singleuser.image"
-    ):
-        """
-        Define an Image from the hubploy config
-
-        name: Fully qualified name of image
-        tag: Tag of image (github hash)
-        helm_substitution_path: Dot separated path in a helm file that should
-                                be populated with this image spec
-        """
-        # name must not be empty
-        # FIXME: Validate name to conform to docker image name guidelines
-        if not name or name.strip() == "":
-            raise ValueError(
-                "Name of image to be built is not specified. Check "
-                + "hubploy.yaml of your deployment"
-            )
-        self.name = name
-        self.tag = tag
-        self.helm_substitution_path = helm_substitution_path
-
-        if self.tag is None:
-            self.image_spec = f"{self.name}"
-        else:
-            self.image_spec = f"{self.name}:{self.tag}"
-
-
 def get_config(deployment, debug=False, verbose=False):
     """
     Returns hubploy.yaml configuration as a Python dictionary if it exists for
@@ -76,36 +43,6 @@ def get_config(deployment, debug=False, verbose=False):
         # If config_path isn't found, this will raise a FileNotFoundError with
         # useful info
         config = yaml.load(f)
-
-    if "images" in config:
-        images_config = config["images"]
-
-        # A single image is being deployed
-        if "image_name" in images_config:
-            if ":" in images_config["image_name"]:
-                image_name, tag = images_config["image_name"].split(":")
-                images = [{"name": image_name, "tag": tag}]
-            else:
-                images = [{"name": images_config["image_name"]}]
-
-        else:
-            # Multiple images are being deployed
-            image_list = images_config["images"]
-            images = []
-            for i in image_list:
-                if ":" in i["name"]:
-                    image_name, tag = i["name"].split(":")
-                    logger.info(f"Tag for {image_name}: {tag}")
-                    images.append(
-                        {
-                            "name": image_name,
-                            "tag": tag,
-                        }
-                    )
-                else:
-                    images.append({"name": i["name"]})
-
-        config["images"]["images"] = [LocalImage(**i) for i in images]
 
     logger.debug(f"Config loaded and parsed: {config}")
     return config

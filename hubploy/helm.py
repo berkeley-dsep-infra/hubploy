@@ -143,7 +143,6 @@ def deploy(
     verbose=False,
     helm_debug=False,
     dry_run=False,
-    image_overrides=None,
 ):
     """
     Deploy a JupyterHub.
@@ -206,90 +205,6 @@ def deploy(
         if os.path.exists(f)
     ]
     logger.debug(f"Using helm secret files: {helm_secret_files}")
-
-    with open(
-        os.path.join("deployments", deployment, "config", f"{environment}.yaml")
-    ) as f:
-        environment_config = yaml.load(f)
-
-    # if no image overrides were given and the helm config specifies an image, this takes precedence
-    # over the image specified in hubploy.yaml
-    jupyterhub_config = environment_config.get("jupyterhub", {})
-    if (
-        image_overrides is None
-        and jupyterhub_config.get("singleuser", {}).get("image", None) is not None
-    ):
-        logger.info(
-            f"Found image specification in the {environment} helm config, using that instead of hubploy.yaml"
-        )
-        image_info = environment_config["jupyterhub"]["singleuser"]["image"]
-        logger.info(
-            f"Using image {image_info['name']}:{image_info.get('tag','latest')}"
-        )
-        del config["images"]
-
-    elif config.get("images"):
-        if image_overrides is not None:
-            print(f"Image overrides found: {image_overrides}")
-            num_images = len(config["images"]["images"])
-            num_overrides = len(image_overrides)
-
-            if num_images != num_overrides:
-                raise ValueError(
-                    f"Number of image overrides ({num_overrides}) must match "
-                    + "number of images found in "
-                    + f"deployments/{deployment}/hubploy.yaml ({num_images})"
-                )
-            for override in image_overrides:
-                if ":" not in override:
-                    raise ValueError(
-                        "Image override must be in the format "
-                        + f"<path_to_image/image_name>:<tag>. Got: {override}"
-                    )
-
-        count = 0
-        for image in config["images"]["images"]:
-            # We can support other charts that wrap z2jh by allowing various
-            # config paths where we set image tags and names.
-            # We default to one sublevel, but we can do multiple levels.
-            #
-            # if image overrides were specified via args, use them over any other configs
-            if image_overrides is not None:
-                override = image_overrides[count]
-                override_image, override_tag = override.split(":")
-                print(
-                    f"Overriding image {image.name}:{image.tag} to "
-                    + f"{override_image}:{override_tag}"
-                )
-                image.name = override_image
-                image.tag = override_tag
-
-            if image.tag is not None:
-                logger.info(
-                    f"Using image {image.name}:{image.tag} for "
-                    + f"{image.helm_substitution_path}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.tag={image.tag}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.name={image.name}"
-                )
-            else:
-                logger.info(
-                    f"Using image {image.name} for "
-                    + f"{image.helm_substitution_path}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.name={image.name}"
-                )
-
-            count += 1
-
-    else:
-        print(
-            f"No image specification found in the {environment} helm config or hubploy.yaml, exiting."
-        )
 
     with ExitStack() as stack:
         # Use any specified kubeconfig context. A value of {namespace} will be
