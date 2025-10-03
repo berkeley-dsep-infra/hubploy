@@ -28,7 +28,7 @@ from contextlib import ExitStack
 from kubernetes.client import CoreV1Api, rest
 from kubernetes.client.models import V1Namespace, V1ObjectMeta
 
-from hubploy.config import get_config
+from hubploy.config import get_config, validate_image_configs
 from hubploy.auth import decrypt_file, cluster_auth, revert_gcloud_auth
 
 from ruamel.yaml import YAML
@@ -205,6 +205,8 @@ def deploy(
         if os.path.exists(f)
     ]
     logger.debug(f"Using helm secret files: {helm_secret_files}")
+
+    validate_image_configs(helm_config_files)
 
     with ExitStack() as stack:
         # Use any specified kubeconfig context. A value of {namespace} will be
