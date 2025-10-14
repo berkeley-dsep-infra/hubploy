@@ -4,13 +4,13 @@ Toolkit to deploy many z2jh based JupyterHubs
 
 Usage:
 
-```
+``` bash
 hubploy deploy <deployment> <chart> <environment>
 ```
 
 Help text:
 
-```
+``` bash
 $ hubploy --help
 usage: hubploy [-h] [-d] [-D] [-v] {deploy} ...
 
@@ -27,7 +27,7 @@ options:
 
 Deploy help:
 
-```
+``` bash
 hubploy deploy --help
 usage: hubploy deploy [-h] [--namespace NAMESPACE] [--set SET] [--set-string SET_STRING] [--version VERSION] [--timeout TIMEOUT] [--force] [--atomic]
                       [--cleanup-on-fail] [--dry-run] [--image-overrides IMAGE_OVERRIDES [IMAGE_OVERRIDES ...]]
@@ -55,8 +55,4 @@ options:
   --cleanup-on-fail     Helm option: allow deletion of new resources created in this upgrade when upgrade fails.
   --dry-run             Dry run the helm upgrade command. This also renders the chart to STDOUT. This is not allowed to be used in a CI environment due to secrets being
                         displayed in plain text, and the script will exit. To enable this option, set a local environment varible HUBPLOY_LOCAL_DEBUG=true
-  --image-overrides IMAGE_OVERRIDES [IMAGE_OVERRIDES ...]
-                        Override one or more images and tags to deploy. Format is: <path_to_image1/image_name>:<tag1> <path_to_image2/image_name>:<tag2> ... IMPORTANT:
-                        The order of images passed in must match the order in which they appear in hubploy.yaml and separated by spaces without quotes. You must always
-                        specify a tag when overriding images.
 ```
