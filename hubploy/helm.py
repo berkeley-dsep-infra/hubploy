@@ -31,10 +31,10 @@ from kubernetes.client.models import V1Namespace, V1ObjectMeta
 from hubploy.config import get_config, validate_image_configs
 from hubploy.auth import decrypt_file, cluster_auth, revert_gcloud_auth
 
-from ruamel.yaml import YAML
+# from ruamel.yaml import YAML
 
 logger = logging.getLogger(__name__)
-yaml = YAML(typ="safe")
+# yaml = YAML(typ="safe")
 HELM_EXECUTABLE = os.environ.get("HELM_EXECUTABLE", "helm")
 
 
