@@ -38,14 +38,14 @@ def validate_image_configs(config_files):
 
         image_name_in_file = (
             config.get("jupyterhub", {})
-            .get("singleuser", None)
-            .get("image", None)
+            .get("singleuser", {})
+            .get("image", {})
             .get("name", None)
         )
         image_tag_in_file = (
             config.get("jupyterhub", {})
-            .get("singleuser", None)
-            .get("image", None)
+            .get("singleuser", {})
+            .get("image", {})
             .get("tag", None)
         )
 
