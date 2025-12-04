@@ -28,7 +28,7 @@ from contextlib import ExitStack
 from kubernetes.client import CoreV1Api, rest
 from kubernetes.client.models import V1Namespace, V1ObjectMeta
 
-from hubploy.config import get_config
+from hubploy.config import get_config, validate_image_configs
 from hubploy.auth import decrypt_file, cluster_auth, revert_gcloud_auth
 
 logger = logging.getLogger(__name__)
@@ -140,7 +140,6 @@ def deploy(
     verbose=False,
     helm_debug=False,
     dry_run=False,
-    image_overrides=None,
 ):
     """
     Deploy a JupyterHub.
@@ -204,60 +203,7 @@ def deploy(
     ]
     logger.debug(f"Using helm secret files: {helm_secret_files}")
 
-    if config.get("images"):
-        if image_overrides is not None:
-            print(f"Image overrides found: {image_overrides}")
-            num_images = len(config["images"]["images"])
-            num_overrides = len(image_overrides)
-
-            if num_images != num_overrides:
-                raise ValueError(
-                    f"Number of image overrides ({num_overrides}) must match "
-                    + "number of images found in "
-                    + f"deployments/{deployment}/hubploy.yaml ({num_images})"
-                )
-            for override in image_overrides:
-                if ":" not in override:
-                    raise ValueError(
-                        "Image override must be in the format "
-                        + f"<path_to_image/image_name>:<tag>. Got: {override}"
-                    )
-
-        count = 0
-        for image in config["images"]["images"]:
-            # We can support other charts that wrap z2jh by allowing various
-            # config paths where we set image tags and names.
-            # We default to one sublevel, but we can do multiple levels.
-            if image_overrides is not None:
-                override = image_overrides[count]
-                override_image, override_tag = override.split(":")
-                print(
-                    f"Overriding image {image.name}:{image.tag} to "
-                    + f"{override_image}:{override_tag}"
-                )
-                image.name = override_image
-                image.tag = override_tag
-
-            if image.tag is not None:
-                logger.info(
-                    f"Using image {image.name}:{image.tag} for "
-                    + f"{image.helm_substitution_path}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.tag={image.tag}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.name={image.name}"
-                )
-            else:
-                logger.info(
-                    f"Using image {image.name} for " + f"{image.helm_substitution_path}"
-                )
-                helm_config_overrides_string.append(
-                    f"{image.helm_substitution_path}.name={image.name}"
-                )
-
-            count += 1
+    validate_image_configs(helm_config_files)
 
     with ExitStack() as stack:
         # Use any specified kubeconfig context. A value of {namespace} will be
