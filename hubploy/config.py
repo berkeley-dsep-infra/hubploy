@@ -61,7 +61,9 @@ def validate_image_configs(config_files):
             continue
 
     if image_counter == 0:
-        raise RuntimeError(f"No image references found in config files: {config_files}")
+        logger.warning(
+            f"Hubploy isn't smart enough to parse images in these files.  Full speed ahead!  Pew Pew! {config_files}"
+        )
     else:
         logger.info(
             f"Found {image_counter} valid image reference(s) in config files: {config_files}"
