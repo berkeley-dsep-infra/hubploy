@@ -2,6 +2,3 @@ ruamel-yaml
 kubernetes
 boto3
 botocore
-pytest
-pytest-cov
-codecov
