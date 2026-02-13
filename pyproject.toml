@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling >= 1.27", "hatch-requirements-txt==0.4.1"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hubploy"
+description = "A tool for deploying Zero to Jupyterhub Helm charts."
+readme = "README.md"
+license = "BSD-3-Clause"
+version = "1.0.0"
+requires-python = ">=3.10"
+dynamic = ["dependencies", "optional-dependencies"]
+authors = [
+    { name = "Yuvi Panda", email = "yuvipanda@gmail.com" },
+    { name = "Shane Knapp", email = "sknapp@berkeley.edu" },
+]
+maintainers = [
+    { name = "Yuvi Panda", email = "yuvipanda@gmail.com" },
+    { name = "Shane Knapp", email = "sknapp@berkeley.edu" },
+]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = ["requirements.txt"]
+
+[tool.hatch.metadata.hooks.requirements_txt.optional-dependencies]
+dev = ["dev-requirements.txt"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["hubploy"]
+
+[tool.isort]
+profile = "black"
+
+[project.urls]
+Homepage = "https://github.com/berkeley-dsep-infra/hubploy"
+Documentation = "https://github.com/berkeley-dsep-infra/hubploy/blob/main/README.md"
+Repository = "https://github.com/berkeley-dsep-infra/hubploy.git"
+"Bug Tracker" = "https://github.com/berkeley-dsep-infra/hubploy/issues"
+
+[project.scripts]
+hubploy = "hubploy.__main__:main"
