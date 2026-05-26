@@ -1,4 +1,4 @@
 ruamel-yaml
-kubernetes
+kubernetes==35.0.0
 boto3
 botocore
