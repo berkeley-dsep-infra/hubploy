@@ -104,6 +104,15 @@ def main():
         + "the script will exit. To enable this option, set a local environment "
         + "varible HUBPLOY_LOCAL_DEBUG=true",
     )
+    deploy_parser.add_argument(
+        "--keyless",
+        default=False,
+        action="store_true",
+        help="Authenticate with Application Default Credentials instead of the "
+        + "service_key in hubploy.yaml, which is ignored. Needs workload "
+        + "identity federation in CI, or 'gcloud auth application-default "
+        + "login' locally. gcloud provider only.",
+    )
 
     args = argparser.parse_args()
 
@@ -165,6 +174,7 @@ def main():
         args.verbose,
         args.helm_debug,
         args.dry_run,
+        args.keyless,
     )
 
 

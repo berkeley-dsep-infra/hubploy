@@ -1,7 +1,9 @@
-ruamel-yaml
-kubernetes
 boto3
 botocore
+codecov
+google-auth
+kubernetes
 pytest
 pytest-cov
-codecov
+requests
+ruamel-yaml

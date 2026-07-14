@@ -7,13 +7,17 @@ Current cloud providers supported: gcloud, aws, and azure.
 """
 
 import boto3
+import google.auth
 import json
 import logging
 import os
+import requests
 import subprocess
 import tempfile
 
 from contextlib import contextmanager
+from google.auth.exceptions import DefaultCredentialsError
+from google.auth.transport.requests import Request
 from hubploy.config import get_config
 from ruamel.yaml import YAML
 from ruamel.yaml.scanner import ScannerError
@@ -21,9 +25,12 @@ from ruamel.yaml.scanner import ScannerError
 logger = logging.getLogger(__name__)
 yaml = YAML(typ="rt")
 
+GKE_API = "https://container.googleapis.com/v1"
+CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+
 
 @contextmanager
-def cluster_auth(deployment, debug=False, verbose=False):
+def cluster_auth(deployment, debug=False, verbose=False, keyless=False):
     """
     Do appropriate cluster authentication for given deployment
     """
@@ -39,6 +46,12 @@ def cluster_auth(deployment, debug=False, verbose=False):
         cluster = config["cluster"]
         provider = cluster.get("provider")
         orig_kubeconfig = os.environ.get("KUBECONFIG", None)
+
+        if keyless and provider != "gcloud":
+            raise ValueError(
+                f"--keyless is only supported for the gcloud provider, "
+                f"but hubploy.yaml sets provider: {provider}"
+            )
 
         try:
             if provider == "kubeconfig":
@@ -65,7 +78,11 @@ def cluster_auth(deployment, debug=False, verbose=False):
                     os.environ["KUBECONFIG"] = temp_kubeconfig.name
                     logger.info(f"Attempting to authenticate with {provider}...")
 
-                    if provider == "gcloud":
+                    if provider == "gcloud" and keyless:
+                        yield from cluster_auth_gcloud_keyless(
+                            deployment, **cluster["gcloud"]
+                        )
+                    elif provider == "gcloud":
                         yield from cluster_auth_gcloud(deployment, **cluster["gcloud"])
                     elif provider == "aws":
                         yield from cluster_auth_aws(deployment, **cluster["aws"])
@@ -134,6 +151,99 @@ def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
     subprocess.check_call(gcloud_cluster_credential_command)
 
     yield current_login
+
+
+def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=None):
+    """
+    Setup GKE authentication with Application Default Credentials
+
+    Unlike cluster_auth_gcloud, this needs no service account key, never shells
+    out to gcloud, and leaves global machine state alone: it mints a token from
+    whatever ambient credential ADC finds, reads the cluster's endpoint and CA
+    from the GKE API, and writes a self-contained kubeconfig.
+
+    ADC resolves to a workload identity federation credentials file in CI (the
+    one google-github-actions/auth writes), or to the user's own credentials
+    from `gcloud auth application-default login` when run locally.
+
+    service_key is accepted and ignored so that one hubploy.yaml can serve both
+    the keyed and keyless paths.
+    """
+    if service_key:
+        logger.info(
+            f"Ignoring service_key {service_key} from hubploy.yaml: "
+            + "--keyless authenticates with Application Default Credentials"
+        )
+
+    try:
+        credentials, adc_project = google.auth.default(scopes=[CLOUD_PLATFORM_SCOPE])
+    except DefaultCredentialsError as e:
+        raise DefaultCredentialsError(
+            "--keyless found no Application Default Credentials. In CI, "
+            "authenticate with workload identity federation first. Locally, run "
+            "`gcloud auth application-default login`."
+        ) from e
+
+    logger.info(f"Found Application Default Credentials for project {adc_project}")
+    credentials.refresh(Request())
+
+    # A zonal and a regional cluster differ only in the location string, which
+    # the GKE API takes either way.
+    url = f"{GKE_API}/projects/{project}/locations/{zone}/clusters/{cluster}"
+    logger.info(f"Getting credentials for {cluster} in {zone}")
+    logger.debug(f"Querying the GKE API: {url}")
+    response = requests.get(
+        url,
+        headers={"Authorization": f"Bearer {credentials.token}"},
+        timeout=30,
+    )
+    response.raise_for_status()
+    cluster_info = response.json()
+
+    context = f"gke_{project}_{zone}_{cluster}"
+    write_gke_kubeconfig(
+        os.environ["KUBECONFIG"],
+        context,
+        cluster_info["endpoint"],
+        cluster_info["masterAuth"]["clusterCaCertificate"],
+        credentials.token,
+    )
+    logger.info(f"Wrote a kubeconfig for context {context}")
+
+    # Nothing to revert: no gcloud login was ever changed.
+    yield None
+
+
+def write_gke_kubeconfig(path, context, endpoint, ca_cert, token):
+    """
+    Write a single-context kubeconfig that authenticates with a bearer token
+
+    The token is short lived, and it is the whole credential, so this file is
+    written to the caller's temporary KUBECONFIG and never logged.
+    """
+    kubeconfig = {
+        "apiVersion": "v1",
+        "kind": "Config",
+        "current-context": context,
+        "clusters": [
+            {
+                "name": context,
+                "cluster": {
+                    "server": f"https://{endpoint}",
+                    "certificate-authority-data": ca_cert,
+                },
+            }
+        ],
+        "contexts": [
+            {
+                "name": context,
+                "context": {"cluster": context, "user": context},
+            }
+        ],
+        "users": [{"name": context, "user": {"token": token}}],
+    }
+    with open(path, "w") as f:
+        yaml.dump(kubeconfig, f)
 
 
 @contextmanager

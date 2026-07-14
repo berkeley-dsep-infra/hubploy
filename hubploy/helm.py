@@ -140,6 +140,7 @@ def deploy(
     verbose=False,
     helm_debug=False,
     dry_run=False,
+    keyless=False,
 ):
     """
     Deploy a JupyterHub.
@@ -222,13 +223,16 @@ def deploy(
             "Activating cluster credentials for deployment "
             + f"{deployment} and performing deployment upgrade."
         )
+        # Only the keyed gcloud path changes the machine's active login, so it
+        # is the only one with anything to revert.
         provider = config.get("cluster", {}).get("provider")
-        if provider == "gcloud":
+        gcloud_key_auth = provider == "gcloud" and not keyless
+        if gcloud_key_auth:
             current_login = stack.enter_context(
-                cluster_auth(deployment, debug, verbose)
+                cluster_auth(deployment, debug, verbose, keyless)
             )
         else:
-            stack.enter_context(cluster_auth(deployment, debug, verbose))
+            stack.enter_context(cluster_auth(deployment, debug, verbose, keyless))
         helm_upgrade(
             name,
             namespace,
@@ -248,5 +252,5 @@ def deploy(
             dry_run,
         )
         # Revert the gcloud auth
-        if provider == "gcloud":
+        if gcloud_key_auth:
             stack.enter_context(revert_gcloud_auth(current_login))

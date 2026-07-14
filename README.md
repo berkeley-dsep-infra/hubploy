@@ -55,4 +55,43 @@ options:
   --cleanup-on-fail     Helm option: allow deletion of new resources created in this upgrade when upgrade fails.
   --dry-run             Dry run the helm upgrade command. This also renders the chart to STDOUT. This is not allowed to be used in a CI environment due to secrets being
                         displayed in plain text, and the script will exit. To enable this option, set a local environment varible HUBPLOY_LOCAL_DEBUG=true
+  --keyless             Authenticate with Application Default Credentials instead of the service_key in hubploy.yaml, which is ignored. Needs workload identity
+                        federation in CI, or 'gcloud auth application-default login' locally. gcloud provider only.
 ```
+
+## Keyless GCP authentication
+
+The `gcloud` provider normally decrypts the service account key named by
+`service_key` in `hubploy.yaml`, then activates it, which changes the machine's
+active gcloud login for the duration of the deploy.
+
+`--keyless` skips all of that. It mints a token from [Application Default
+Credentials][adc], reads the cluster endpoint and CA cert from the GKE API, and
+writes its own kubeconfig. No key, no gcloud, no global state to put back.
+
+[adc]: https://cloud.google.com/docs/authentication/application-default-credentials
+
+``` bash
+hubploy deploy --keyless <deployment> <chart> <environment>
+```
+
+In CI, authenticate with workload identity federation first:
+
+``` yaml
+- uses: google-github-actions/auth@v3
+  with:
+    workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+    service_account: ${{ vars.DEPLOY_SA }}
+
+- run: hubploy deploy --keyless <deployment> hub prod
+```
+
+Locally, log in once:
+
+``` bash
+gcloud auth application-default login
+```
+
+`service_key` is ignored under `--keyless`, so one `hubploy.yaml` serves both
+paths and going back to the key means dropping the flag. Passing `--keyless`
+with a non-gcloud provider is an error.
