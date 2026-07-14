@@ -159,8 +159,8 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
 
     Unlike cluster_auth_gcloud, this needs no service account key, never shells
     out to gcloud, and leaves global machine state alone: it mints a token from
-    whatever ambient credential ADC finds, reads the cluster's endpoint and CA
-    from the GKE API, and writes a self-contained kubeconfig.
+    ADC, reads the cluster's endpoint and CA from the GKE API, and writes the
+    self-contained kubeconfig.
 
     service_key is accepted and ignored so that one hubploy.yaml can serve both
     the keyed and keyless paths.
