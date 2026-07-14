@@ -78,12 +78,15 @@ def cluster_auth(deployment, debug=False, verbose=False, keyless=False):
                     os.environ["KUBECONFIG"] = temp_kubeconfig.name
                     logger.info(f"Attempting to authenticate with {provider}...")
 
-                    if provider == "gcloud" and keyless:
-                        yield from cluster_auth_gcloud_keyless(
-                            deployment, **cluster["gcloud"]
-                        )
-                    elif provider == "gcloud":
-                        yield from cluster_auth_gcloud(deployment, **cluster["gcloud"])
+                    if provider == "gcloud":
+                        if keyless:
+                            yield from cluster_auth_gcloud_keyless(
+                                deployment, **cluster["gcloud"]
+                            )
+                        else:
+                            yield from cluster_auth_gcloud(
+                                deployment, **cluster["gcloud"]
+                            )
                     elif provider == "aws":
                         yield from cluster_auth_aws(deployment, **cluster["aws"])
                     elif provider == "azure":
