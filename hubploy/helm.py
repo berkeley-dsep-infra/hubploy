@@ -223,16 +223,11 @@ def deploy(
             "Activating cluster credentials for deployment "
             + f"{deployment} and performing deployment upgrade."
         )
-        # Only the keyed gcloud path changes the machine's active login, so it
-        # is the only one with anything to revert.
         provider = config.get("cluster", {}).get("provider")
         gcloud_key_auth = provider == "gcloud" and encrypted_key
-        if gcloud_key_auth:
-            current_login = stack.enter_context(
-                cluster_auth(deployment, debug, verbose, encrypted_key)
-            )
-        else:
-            stack.enter_context(cluster_auth(deployment, debug, verbose, encrypted_key))
+        current_login = stack.enter_context(
+            cluster_auth(deployment, debug, verbose, encrypted_key)
+        )
         helm_upgrade(
             name,
             namespace,
