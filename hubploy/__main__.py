@@ -105,13 +105,13 @@ def main():
         + "variable HUBPLOY_LOCAL_DEBUG=true",
     )
     deploy_parser.add_argument(
-        "--keyless",
+        "--encrypted-key",
+        "-K",
         default=False,
         action="store_true",
-        help="Authenticate with Application Default Credentials instead of the "
-        + "service_key in hubploy.yaml, which is ignored. Needs workload "
-        + "identity federation in CI, or 'gcloud auth application-default "
-        + "login' locally. gcloud provider only.",
+        help="Use an encrypted service account key for GCP authentication. "
+        + "This is defined as service_key in hubploy.yaml. If this is not "
+        + "specified, the default GCP credentials will be used.",
     )
 
     args = argparser.parse_args()
@@ -174,7 +174,7 @@ def main():
         args.verbose,
         args.helm_debug,
         args.dry_run,
-        args.keyless,
+        args.encrypted_key,
     )
 
 

@@ -30,7 +30,7 @@ CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
 
 
 @contextmanager
-def cluster_auth(deployment, debug=False, verbose=False, keyless=False):
+def cluster_auth(deployment, debug=False, verbose=False, encrypted_key=False):
     """
     Do appropriate cluster authentication for given deployment
     """
@@ -46,12 +46,6 @@ def cluster_auth(deployment, debug=False, verbose=False, keyless=False):
         cluster = config["cluster"]
         provider = cluster.get("provider")
         orig_kubeconfig = os.environ.get("KUBECONFIG", None)
-
-        if keyless and provider != "gcloud":
-            raise ValueError(
-                f"--keyless is only supported for the gcloud provider, "
-                f"but hubploy.yaml sets provider: {provider}"
-            )
 
         try:
             if provider == "kubeconfig":
@@ -79,12 +73,12 @@ def cluster_auth(deployment, debug=False, verbose=False, keyless=False):
                     logger.info(f"Attempting to authenticate with {provider}...")
 
                     if provider == "gcloud":
-                        if keyless:
-                            yield from cluster_auth_gcloud_keyless(
+                        if encrypted_key:
+                            yield from cluster_auth_gcloud(
                                 deployment, **cluster["gcloud"]
                             )
                         else:
-                            yield from cluster_auth_gcloud(
+                            yield from cluster_auth_gcloud_keyless(
                                 deployment, **cluster["gcloud"]
                             )
                     elif provider == "aws":
@@ -171,14 +165,14 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
     if service_key:
         logger.info(
             f"Ignoring service_key {service_key} from hubploy.yaml: "
-            + "--keyless authenticates with Application Default Credentials"
+            + "keyless authenticates with Application Default Credentials"
         )
 
     try:
         credentials, adc_project = google.auth.default(scopes=[CLOUD_PLATFORM_SCOPE])
     except DefaultCredentialsError as e:
         raise DefaultCredentialsError(
-            "--keyless found no Application Default Credentials. In CI, "
+            "Hubploy found no Application Default Credentials. In CI, "
             "authenticate with workload identity federation first. Locally, run "
             "`gcloud auth application-default login`."
         ) from e
