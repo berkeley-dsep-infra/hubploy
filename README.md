@@ -30,7 +30,7 @@ Deploy help:
 ``` bash
 hubploy deploy --help
 usage: hubploy deploy [-h] [--namespace NAMESPACE] [--set SET] [--set-string SET_STRING] [--version VERSION] [--timeout TIMEOUT] [--force] [--atomic]
-                      [--cleanup-on-fail] [--dry-run] [--image-overrides IMAGE_OVERRIDES [IMAGE_OVERRIDES ...]]
+                      [--cleanup-on-fail] [--dry-run] [--encrypted-key]
                       deployment chart {develop,staging,prod}
 
 positional arguments:
@@ -46,36 +46,27 @@ options:
   --set SET             Helm option: set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)
   --set-string SET_STRING
                         Helm option: set STRING values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)
-  --version VERSION     Helm option: specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a
-                        valid range (e.g. ^2.0.0). If this is not specified, the latest version is used.
+  --version VERSION     Helm option: specify a version constraint for the chart version to use. This constraint can be a specific tag (e.g. 1.1.1) or it may reference a valid range (e.g. ^2.0.0). If this is not specified, the latest version is used.
   --timeout TIMEOUT     Helm option: time in seconds to wait for any individual Kubernetes operation (like Jobs for hooks, etc). Defaults to 300 seconds.
   --force               Helm option: force resource updates through a replacement strategy.
-  --atomic              Helm option: if set, upgrade process rolls back changes made in case of failed upgrade. The --wait flag will be set automatically if --atomic is
-                        used.
+  --atomic              Helm option: if set, upgrade process rolls back changes made in case of failed upgrade. The --wait flag will be set automatically if --atomic is used.
   --cleanup-on-fail     Helm option: allow deletion of new resources created in this upgrade when upgrade fails.
-  --dry-run             Dry run the helm upgrade command. This also renders the chart to STDOUT. This is not allowed to be used in a CI environment due to secrets being
-                        displayed in plain text, and the script will exit. To enable this option, set a local environment variable HUBPLOY_LOCAL_DEBUG=true
-  --keyless             Authenticate with Application Default Credentials instead of the service_key in hubploy.yaml, which is ignored. Needs workload identity
-                        federation in CI, or 'gcloud auth application-default login' locally. gcloud provider only.
+  --dry-run             Dry run the helm upgrade command. This also renders the chart to STDOUT. This is not allowed to be used in a CI environment due to secrets being displayed in plain text, and the script will exit. To enable this option, set a local environment variable HUBPLOY_LOCAL_DEBUG=true
+  --encrypted-key, -K   Use an encrypted service account key for GCP authentication. This is defined as service_key in hubploy.yaml. If this is not specified, the default GCP credentials will be used.
 ```
 
-## Keyless GCP authentication
+## Authentication
 
-The `gcloud` provider normally decrypts the service account key named by
-`service_key` in `hubploy.yaml`, then activates it, which changes the machine's
-active gcloud login for the duration of the deploy.
+### GCP
 
-`--keyless` skips all of that. It mints a token from [Application Default
-Credentials][adc], reads the cluster endpoint and CA cert from the GKE API, and
-writes its own kubeconfig. No key, no gcloud, no global state to put back.
+#### Keyless
 
-[adc]: https://cloud.google.com/docs/authentication/application-default-credentials
+For logging in to GCP, `hubploy` mints a short-lived token from [Application
+Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials),
+reads the cluster endpoint and CA cert from the GKE API, and writes its own
+kubeconfig.
 
-``` bash
-hubploy deploy --keyless <deployment> <chart> <environment>
-```
-
-In CI, authenticate with workload identity federation first:
+In CI/CD, authenticate with workload identity federation first:
 
 ``` yaml
 - uses: google-github-actions/auth@v3
@@ -83,15 +74,44 @@ In CI, authenticate with workload identity federation first:
     workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
     service_account: ${{ vars.DEPLOY_SA }}
 
-- run: hubploy deploy --keyless <deployment> hub prod
+- run: hubploy deploy <deployment> <hub chart> <environment>
 ```
 
-Locally, log in once:
+For local deploy runs, be sure you're logged in:
 
 ``` bash
 gcloud auth application-default login
 ```
 
-`service_key` is ignored under `--keyless`, so one `hubploy.yaml` serves both
-paths and going back to the key means dropping the flag. Passing `--keyless`
-with a non-gcloud provider is an error.
+Note:  If you happen to have encrypted keys defined in `hubploy.yaml`, they will
+be ignored by default.
+
+#### Encrypted Keys
+
+If you want to use encrypted keys on disk, the `gcloud` provider will decrypt
+the service account key named by `service_key` in `hubploy.yaml`. The service
+account is then activated, which changes the machine's active gcloud login for
+the duration of the deploy.
+
+To use encrypted key authentication, pass the `--encrypted-key/-K` flags after
+`deploy` on the CLI.
+
+``` bash
+hubploy deploy -K <deployment> <hub chart> <environment>
+```
+
+### AWS
+
+Currently, you can use either the AWS environment variables or an encrypted key.
+
+For the environment variables, ensure that the following are present and current:
+
+``` bash
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+AWS_SESSION_TOKEN
+```
+
+### Azure
+
+Azure authentication is handled purely with an encrypted file.
