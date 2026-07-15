@@ -21,7 +21,7 @@ positional arguments:
 options:
   -h, --help        show this help message and exit
   -d, --debug       Enable tool debug output (not including helm debug).
-  -D, --helm-debug  Enable Helm debug output. This is not allowed to be used in a CI environment due to secrets being displayed in plain text, and the script will exit. To enable this option, set a local environment varible HUBPLOY_LOCAL_DEBUG=true
+  -D, --helm-debug  Enable Helm debug output. This is not allowed to be used in a CI environment due to secrets being displayed in plain text, and the script will exit. To enable this option, set a local environment variable HUBPLOY_LOCAL_DEBUG=true
   -v, --verbose     Enable verbose output.
 ```
 
@@ -54,7 +54,7 @@ options:
                         used.
   --cleanup-on-fail     Helm option: allow deletion of new resources created in this upgrade when upgrade fails.
   --dry-run             Dry run the helm upgrade command. This also renders the chart to STDOUT. This is not allowed to be used in a CI environment due to secrets being
-                        displayed in plain text, and the script will exit. To enable this option, set a local environment varible HUBPLOY_LOCAL_DEBUG=true
+                        displayed in plain text, and the script will exit. To enable this option, set a local environment variable HUBPLOY_LOCAL_DEBUG=true
   --keyless             Authenticate with Application Default Credentials instead of the service_key in hubploy.yaml, which is ignored. Needs workload identity
                         federation in CI, or 'gcloud auth application-default login' locally. gcloud provider only.
 ```
