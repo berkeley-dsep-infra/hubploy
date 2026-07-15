@@ -190,12 +190,23 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
         headers={"Authorization": f"Bearer {credentials.token}"},
         timeout=30,
     )
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except requests.HTTPError:
+        logger.error(f"GKE API returned {response.status_code}: {response.text}")
+        raise
     cluster_info = response.json()
+
+    kubeconfig_path = os.environ.get("KUBECONFIG")
+    if not kubeconfig_path:
+        raise RuntimeError(
+            "KUBECONFIG is not set; cluster_auth_gcloud_keyless expects to run "
+            "inside cluster_auth, which creates the temporary kubeconfig."
+        )
 
     context = f"gke_{project}_{zone}_{cluster}"
     write_gke_kubeconfig(
-        os.environ["KUBECONFIG"],
+        kubeconfig_path,
         context,
         cluster_info["endpoint"],
         cluster_info["masterAuth"]["clusterCaCertificate"],
@@ -203,7 +214,6 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
     )
     logger.info(f"Wrote a kubeconfig for context {context}")
 
-    # Nothing to revert: no gcloud login was ever changed.
     yield None
 
 
