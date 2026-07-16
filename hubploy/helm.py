@@ -140,6 +140,7 @@ def deploy(
     verbose=False,
     helm_debug=False,
     dry_run=False,
+    encrypted_key=False,
 ):
     """
     Deploy a JupyterHub.
@@ -223,12 +224,10 @@ def deploy(
             + f"{deployment} and performing deployment upgrade."
         )
         provider = config.get("cluster", {}).get("provider")
-        if provider == "gcloud":
-            current_login = stack.enter_context(
-                cluster_auth(deployment, debug, verbose)
-            )
-        else:
-            stack.enter_context(cluster_auth(deployment, debug, verbose))
+        gcloud_key_auth = provider == "gcloud" and encrypted_key
+        current_login = stack.enter_context(
+            cluster_auth(deployment, debug, verbose, encrypted_key)
+        )
         helm_upgrade(
             name,
             namespace,
@@ -248,5 +247,5 @@ def deploy(
             dry_run,
         )
         # Revert the gcloud auth
-        if provider == "gcloud":
+        if gcloud_key_auth:
             stack.enter_context(revert_gcloud_auth(current_login))

@@ -7,7 +7,7 @@ name = "hubploy"
 description = "A tool for deploying Zero to Jupyterhub Helm charts."
 readme = "README.md"
 license = "BSD-3-Clause"
-version = "1.0.0"
+version = "1.1.0"
 requires-python = ">=3.10"
 dynamic = ["dependencies", "optional-dependencies"]
 authors = [

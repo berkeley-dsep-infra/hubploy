@@ -28,7 +28,7 @@ def main():
         help="Enable Helm debug output. This is not allowed to be used in a "
         + "CI environment due to secrets being displayed in plain text, and "
         + "the script will exit. To enable this option, set a local environment "
-        + "varible HUBPLOY_LOCAL_DEBUG=true",
+        + "variable HUBPLOY_LOCAL_DEBUG=true",
     )
     argparser.add_argument(
         "-v", "--verbose", action="store_true", help="Enable verbose output."
@@ -102,7 +102,16 @@ def main():
         + "chart to STDOUT. This is not allowed to be used in a "
         + "CI environment due to secrets being displayed in plain text, and "
         + "the script will exit. To enable this option, set a local environment "
-        + "varible HUBPLOY_LOCAL_DEBUG=true",
+        + "variable HUBPLOY_LOCAL_DEBUG=true",
+    )
+    deploy_parser.add_argument(
+        "--encrypted-key",
+        "-K",
+        default=False,
+        action="store_true",
+        help="Use an encrypted service account key for GCP authentication. "
+        + "This is defined as service_key in hubploy.yaml. If this is not "
+        + "specified, the default GCP credentials will be used.",
     )
 
     args = argparser.parse_args()
@@ -165,6 +174,7 @@ def main():
         args.verbose,
         args.helm_debug,
         args.dry_run,
+        args.encrypted_key,
     )
 
 
