@@ -3,7 +3,7 @@
 Toolkit to deploy many z2jh based JupyterHubs
 
 `hubploy` is a thin wrapper around cloud provider authentication, configuration
-file parsing and `helm`.
+file parsing, `sops` and `helm`.
 
 Usage:
 
