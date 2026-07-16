@@ -27,6 +27,10 @@ yaml = YAML(typ="rt")
 
 GKE_API = "https://container.googleapis.com/v1"
 CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform"
+# Without this scope the token carries no email claim, so GKE resolves the
+# caller to the service account's numeric uniqueId instead of its email and
+# email-based RBAC bindings do not match.
+USERINFO_EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email"
 
 
 @contextmanager
@@ -169,7 +173,9 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
         )
 
     try:
-        credentials, adc_project = google.auth.default(scopes=[CLOUD_PLATFORM_SCOPE])
+        credentials, adc_project = google.auth.default(
+            scopes=[CLOUD_PLATFORM_SCOPE, USERINFO_EMAIL_SCOPE]
+        )
     except DefaultCredentialsError as e:
         raise DefaultCredentialsError(
             "Hubploy found no Application Default Credentials. In CI, "
