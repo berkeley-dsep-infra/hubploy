@@ -29,7 +29,7 @@ from kubernetes.client import CoreV1Api, rest
 from kubernetes.client.models import V1Namespace, V1ObjectMeta
 
 from hubploy.config import get_config, validate_image_configs
-from hubploy.auth import decrypt_file, cluster_auth, revert_gcloud_auth
+from hubploy.auth import decrypt_file, cluster_auth
 
 logger = logging.getLogger(__name__)
 HELM_EXECUTABLE = os.environ.get("HELM_EXECUTABLE", "helm")
@@ -140,7 +140,6 @@ def deploy(
     verbose=False,
     helm_debug=False,
     dry_run=False,
-    encrypted_key=False,
 ):
     """
     Deploy a JupyterHub.
@@ -223,11 +222,7 @@ def deploy(
             "Activating cluster credentials for deployment "
             + f"{deployment} and performing deployment upgrade."
         )
-        provider = config.get("cluster", {}).get("provider")
-        gcloud_key_auth = provider == "gcloud" and encrypted_key
-        current_login = stack.enter_context(
-            cluster_auth(deployment, debug, verbose, encrypted_key)
-        )
+        stack.enter_context(cluster_auth(deployment, debug, verbose))
         helm_upgrade(
             name,
             namespace,
@@ -246,6 +241,3 @@ def deploy(
             helm_debug,
             dry_run,
         )
-        # Revert the gcloud auth
-        if gcloud_key_auth:
-            stack.enter_context(revert_gcloud_auth(current_login))
