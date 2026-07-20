@@ -34,7 +34,7 @@ USERINFO_EMAIL_SCOPE = "https://www.googleapis.com/auth/userinfo.email"
 
 
 @contextmanager
-def cluster_auth(deployment, debug=False, verbose=False, encrypted_key=False):
+def cluster_auth(deployment, debug=False, verbose=False):
     """
     Do appropriate cluster authentication for given deployment
     """
@@ -77,14 +77,7 @@ def cluster_auth(deployment, debug=False, verbose=False, encrypted_key=False):
                     logger.info(f"Attempting to authenticate with {provider}...")
 
                     if provider == "gcloud":
-                        if encrypted_key:
-                            yield from cluster_auth_gcloud(
-                                deployment, **cluster["gcloud"]
-                            )
-                        else:
-                            yield from cluster_auth_gcloud_keyless(
-                                deployment, **cluster["gcloud"]
-                            )
+                        yield from cluster_auth_gcloud(**cluster["gcloud"])
                     elif provider == "aws":
                         yield from cluster_auth_aws(deployment, **cluster["aws"])
                     elif provider == "azure":
@@ -97,81 +90,15 @@ def cluster_auth(deployment, debug=False, verbose=False, encrypted_key=False):
             unset_env_var("KUBECONFIG", orig_kubeconfig)
 
 
-def cluster_auth_gcloud(deployment, project, cluster, zone, service_key):
-    """
-    Setup GKE authentication with service_key
-
-    This changes *global machine state* on what current kubernetes cluster is!
-    """
-    current_login_command = [
-        "gcloud",
-        "config",
-        "get-value",
-        "account",
-    ]
-    logger.info("Saving current gcloud login")
-    logger.debug(
-        "Running gcloud command: " + " ".join(x for x in current_login_command)
-    )
-    current_login = (
-        subprocess.check_output(current_login_command).decode("utf-8").strip()
-    )
-    logger.info(f"Current gcloud login: {current_login}")
-
-    encrypted_service_key_path = os.path.join(
-        "deployments", deployment, "secrets", service_key
-    )
-    with decrypt_file(encrypted_service_key_path) as decrypted_service_key_path:
-        gcloud_auth_command = [
-            "gcloud",
-            "auth",
-            "activate-service-account",
-            "--key-file",
-            os.path.abspath(decrypted_service_key_path),
-        ]
-        logger.info(f"Activating service account for {project}")
-        logger.debug(
-            "Running gcloud command: " + " ".join(x for x in gcloud_auth_command)
-        )
-        subprocess.check_call(gcloud_auth_command)
-
-    gcloud_cluster_credential_command = [
-        "gcloud",
-        "container",
-        "clusters",
-        f"--zone={zone}",
-        f"--project={project}",
-        "get-credentials",
-        cluster,
-    ]
-    logger.info(f"Getting credentials for {cluster} in {zone}")
-    logger.debug(
-        "Running gcloud command: "
-        + " ".join(x for x in gcloud_cluster_credential_command)
-    )
-    subprocess.check_call(gcloud_cluster_credential_command)
-
-    yield current_login
-
-
-def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=None):
+def cluster_auth_gcloud(project, cluster, zone):
     """
     Setup GKE authentication with Application Default Credentials
 
-    Unlike cluster_auth_gcloud, this needs no service account key, never shells
-    out to gcloud, and leaves global machine state alone: it mints a token from
-    ADC, reads the cluster's endpoint and CA from the GKE API, and writes the
-    self-contained kubeconfig.
-
-    service_key is accepted and ignored so that one hubploy.yaml can serve both
-    the keyed and keyless paths.
+    This needs no service account key, never shells out to gcloud, and leaves
+    global machine state alone: it mints a token from ADC, reads the
+    cluster's endpoint and CA from the GKE API, and writes the self-contained
+    kubeconfig.
     """
-    if service_key:
-        logger.info(
-            f"Ignoring service_key {service_key} from hubploy.yaml: "
-            + "keyless authenticates with Application Default Credentials"
-        )
-
     try:
         credentials, adc_project = google.auth.default(
             scopes=[CLOUD_PLATFORM_SCOPE, USERINFO_EMAIL_SCOPE]
@@ -206,7 +133,7 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
     kubeconfig_path = os.environ.get("KUBECONFIG")
     if not kubeconfig_path:
         raise RuntimeError(
-            "KUBECONFIG is not set; cluster_auth_gcloud_keyless expects to run "
+            "KUBECONFIG is not set; cluster_auth_gcloud expects to run "
             "inside cluster_auth, which creates the temporary kubeconfig."
         )
 
@@ -220,7 +147,7 @@ def cluster_auth_gcloud_keyless(deployment, project, cluster, zone, service_key=
     )
     logger.info(f"Wrote a kubeconfig for context {context}")
 
-    yield None
+    yield
 
 
 def write_gke_kubeconfig(path, context, endpoint, ca_cert, token):
@@ -253,20 +180,6 @@ def write_gke_kubeconfig(path, context, endpoint, ca_cert, token):
     }
     with open(path, "w") as f:
         yaml.dump(kubeconfig, f)
-
-
-@contextmanager
-def revert_gcloud_auth(current_login):
-    """
-    Revert gcloud authentication to previous state
-    """
-    if current_login:
-        logger.info(f"Reverting gcloud login to {current_login}")
-        subprocess.check_call(["gcloud", "config", "set", "account", current_login])
-    else:
-        logger.info("Reverting gcloud login to default")
-        subprocess.check_call(["gcloud", "config", "unset", "account"])
-    yield
 
 
 @contextmanager
