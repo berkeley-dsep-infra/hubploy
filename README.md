@@ -61,8 +61,10 @@ options:
 
 ### GCP
 
-For logging in to GCP, `hubploy` uses whatever gcloud identity is already
-active — it does not manage GCP credentials itself.
+For logging in to GCP, `hubploy` mints a short-lived token from [Application
+Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials),
+reads the cluster endpoint and CA cert from the GKE API, and writes its own
+kubeconfig.
 
 In CI/CD, authenticate with workload identity federation first:
 
@@ -78,7 +80,7 @@ In CI/CD, authenticate with workload identity federation first:
 For local deploy runs, be sure you're logged in:
 
 ``` bash
-gcloud auth login
+gcloud auth application-default login
 ```
 
 ### AWS
