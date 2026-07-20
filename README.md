@@ -61,6 +61,8 @@ options:
 
 ### GCP
 
+#### Keyless
+
 For logging in to GCP, `hubploy` mints a short-lived token from [Application
 Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials),
 reads the cluster endpoint and CA cert from the GKE API, and writes its own
